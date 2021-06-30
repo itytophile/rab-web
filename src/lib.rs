@@ -31,6 +31,7 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
         filtered_skills,
         wishes,
         filter: "".to_owned(),
+        changing_wish_index: None,
     }
 }
 
@@ -56,6 +57,7 @@ struct Model {
     filtered_skills: Vec<Skill>,
     wishes: Vec<(Skill, u8)>,
     filter: String,
+    changing_wish_index: Option<usize>,
 }
 
 // ------ ------
@@ -68,7 +70,9 @@ enum Msg {
     AddWish,
     DeleteWish(IndexWish),
     ChangeWishAmount(IndexWish, AmountSkill),
-    ToggleWishModal,
+    ToggleWishModal(Option<IndexWish>),
+    ChangeWish(IndexWish, Skill),
+    Nothing,
 }
 
 type IndexWish = usize;
@@ -127,7 +131,27 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
             }
         }
         Msg::ChangeWishAmount(index, amount) => model.wishes[index].1 = amount,
-        Msg::ToggleWishModal => model.is_choosing_skill ^= true,
+        Msg::ToggleWishModal(index) => {
+            model.changing_wish_index = index;
+            model.is_choosing_skill ^= true
+        }
+        Msg::ChangeWish(index, skill) => {
+            let to_delete = model
+                .filtered_skills
+                .iter()
+                .position(|x| *x == skill)
+                .expect("skill not found in filtered list");
+            model.filtered_skills.swap_remove(to_delete);
+            model.filtered_skills.push(model.wishes[index].0);
+            model.filtered_skills.lexical_sort();
+
+            model.wishes[index] = (skill, 1);
+
+            // toggling modal
+            model.changing_wish_index = None;
+            model.is_choosing_skill ^= true
+        }
+        Msg::Nothing => {}
     }
 }
 
@@ -140,7 +164,11 @@ fn view(model: &Model) -> Node<Msg> {
     let disabled_delete = model.wishes.len() <= 1;
     div![
         C!["container", "has-text-centered"],
-        view_modal(model.is_choosing_skill, &model.filtered_skills),
+        view_modal(
+            model.is_choosing_skill,
+            &model.filtered_skills,
+            model.changing_wish_index
+        ),
         view_buttons(model.is_loading, model.wishes.len() == Skill::ALL.len()),
         model
             .wishes
@@ -186,7 +214,7 @@ fn view_wish_field(wish: (Skill, u8), disabled_delete: bool, index: usize) -> No
                 C!["button", "is-primary"],
                 span![C!["icon"], i![C!["fas", "fa-undo"]]],
                 span![format!("{:?}", skill)],
-                ev(Ev::Click, |_| Msg::ToggleWishModal)
+                ev(Ev::Click, move |_| Msg::ToggleWishModal(Some(index)))
             ]
         ],
         div![
@@ -238,7 +266,7 @@ fn view_filter_input() -> Node<Msg> {
     ]
 }
 
-fn view_modal(is_active: bool, skills: &[Skill]) -> Node<Msg> {
+fn view_modal(is_active: bool, skills: &[Skill], changing_wish_index: Option<usize>) -> Node<Msg> {
     div![
         C!["modal", IF!(is_active => "is-active")],
         div![C!["modal-background"]],
@@ -254,9 +282,17 @@ fn view_modal(is_active: bool, skills: &[Skill]) -> Node<Msg> {
                 if is_active {
                     div![
                         C!["buttons"],
-                        skills
-                            .iter()
-                            .map(|s| { button![C!["button"], format!("{:?}", s)] })
+                        skills.iter().map(|&s| {
+                            button![
+                                C!["button"],
+                                format!("{:?}", s),
+                                if let Some(index) = changing_wish_index {
+                                    ev(Ev::Click, move |_| Msg::ChangeWish(index, s))
+                                } else {
+                                    ev(Ev::Click, |_| Msg::Nothing)
+                                },
+                            ]
+                        })
                     ]
                 } else {
                     empty![]
@@ -268,7 +304,7 @@ fn view_modal(is_active: bool, skills: &[Skill]) -> Node<Msg> {
                     C!["button", "is-link"],
                     span![C!["icon"], i![C!["fas", "fa-arrow-left"]]],
                     span!["Back"],
-                    ev(Ev::Click, |_| Msg::ToggleWishModal)
+                    ev(Ev::Click, |_| Msg::ToggleWishModal(None))
                 ],
             ]
         ]
