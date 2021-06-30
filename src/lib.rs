@@ -170,11 +170,16 @@ fn view(model: &Model) -> Node<Msg> {
             model.changing_wish_index
         ),
         view_buttons(model.is_loading, model.wishes.len() == Skill::ALL.len()),
-        model
-            .wishes
-            .iter()
-            .enumerate()
-            .map(|(index, wish)| view_wish_field(*wish, disabled_delete, index))
+        div![
+            style! {
+                St::Display => "inline-block"
+            },
+            model
+                .wishes
+                .iter()
+                .enumerate()
+                .map(|(index, wish)| view_wish_field(*wish, disabled_delete, index))
+        ]
     ]
 }
 
@@ -207,7 +212,7 @@ fn view_wish_field(wish: (Skill, u8), disabled_delete: bool, index: usize) -> No
     let (skill, amount) = wish;
     let limit = skill.get_limit();
     div![
-        C!["field", "has-addons", "has-addons-centered"],
+        C!["field", "has-addons", "has-addons-right"],
         div![
             C!["control"],
             button![
