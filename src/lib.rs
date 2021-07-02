@@ -178,7 +178,12 @@ fn view(model: &Model) -> Node<Msg> {
                 .wishes
                 .iter()
                 .enumerate()
-                .map(|(index, wish)| view_wish_field(*wish, disabled_delete, index))
+                .map(|(index, wish)| view_wish_field(
+                    *wish,
+                    disabled_delete,
+                    index,
+                    model.is_loading
+                ))
         ]
     ]
 }
@@ -189,8 +194,8 @@ fn view_buttons(is_loading: bool, add_disabled: bool) -> Node<Msg> {
         p![
             C!["control"],
             button![
-                C!["button", "is-success", IF!(is_loading => "is-loading")],
-                attrs! {At::Disabled => add_disabled.as_at_value()},
+                C!["button", "is-success"],
+                attrs! {At::Disabled => (is_loading | add_disabled).as_at_value()},
                 span![C!["icon"], i![C!["fas", "fa-plus"]]],
                 span!["Add wish"],
                 ev(Ev::Click, |_| Msg::AddWish)
@@ -208,7 +213,12 @@ fn view_buttons(is_loading: bool, add_disabled: bool) -> Node<Msg> {
     ]
 }
 
-fn view_wish_field(wish: (Skill, u8), disabled_delete: bool, index: usize) -> Node<Msg> {
+fn view_wish_field(
+    wish: (Skill, u8),
+    disabled_delete: bool,
+    index: usize,
+    is_loading: bool,
+) -> Node<Msg> {
     let (skill, amount) = wish;
     let limit = skill.get_limit();
     div![
@@ -217,6 +227,7 @@ fn view_wish_field(wish: (Skill, u8), disabled_delete: bool, index: usize) -> No
             C!["control"],
             button![
                 C!["button", "is-primary"],
+                attrs! {At::Disabled => is_loading.as_at_value()},
                 span![C!["icon"], i![C!["fas", "fa-undo"]]],
                 span![format!("{:?}", skill)],
                 ev(Ev::Click, move |_| Msg::ToggleWishModal(Some(index)))
@@ -230,7 +241,8 @@ fn view_wish_field(wish: (Skill, u8), disabled_delete: bool, index: usize) -> No
                     At::Type => "number",
                     At::Value => amount,
                     At::Min => 1,
-                    At::Max => limit
+                    At::Max => limit,
+                    At::Disabled => is_loading.as_at_value()
                 },
                 input_ev(Ev::Input, move |new_amount| Msg::ChangeWishAmount(
                     index,
@@ -242,7 +254,7 @@ fn view_wish_field(wish: (Skill, u8), disabled_delete: bool, index: usize) -> No
             C!["control"],
             button![
                 C!["button", "is-danger"],
-                attrs! {At::Disabled => disabled_delete.as_at_value()},
+                attrs! {At::Disabled => (is_loading | disabled_delete).as_at_value()},
                 span![C!["icon"], i![C!["fas", "fa-trash-alt"]]],
                 ev(Ev::Click, move |_| Msg::DeleteWish(index))
             ]
