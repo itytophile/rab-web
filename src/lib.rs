@@ -6,7 +6,10 @@
 use std::cmp::min;
 
 use lexical_sort::natural_lexical_cmp;
-use rab_core::armor_and_skills::Skill;
+use rab_core::{
+    armor_and_skills::{Armor, Gender, Skill},
+    build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
+};
 use seed::{prelude::*, *};
 
 // ------ ------
@@ -15,7 +18,13 @@ use seed::{prelude::*, *};
 
 // `init` describes what should happen when your app started.
 
-fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
+enum Page {
+    Wishes,
+    Results,
+    ArmorsFetching,
+}
+
+fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
     let mut sorted_skills = Skill::ALL.to_vec();
     sorted_skills.lexical_sort();
     let wishes = vec![(sorted_skills[0], 1)];
@@ -24,6 +33,16 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
         .filter(|s| !wishes.iter().map(|(s, _)| s).any(|s0| *s == s0))
         .copied()
         .collect();
+
+    orders.perform_cmd(async {
+        Msg::EndArmorInitialization(fetch_armors().await.unwrap_or_else(|err| {
+            log!(err);
+            ArmorLists::default()
+        }))
+    });
+
+    // orders.perform_cmd(async { log!(fetch_armors().await.expect("lol")) });
+
     Model {
         is_loading: false,
         is_choosing_skill: false,
@@ -32,6 +51,57 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
         wishes,
         filter: "".to_owned(),
         changing_wish_index: None,
+        page: Page::ArmorsFetching,
+        armors: ArmorLists::default(),
+        searched_builds: vec![],
+    }
+}
+
+use futures::future::join_all;
+const BASE_URL_ARMORS: &str =
+    "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
+const HELMETS_FILE: &str = "helmets.ron";
+const CHESTS_FILE: &str = "chests.ron";
+const ARMS_FILE: &str = "arms.ron";
+const WAISTS_FILE: &str = "waists.ron";
+const LEGS_FILE: &str = "legs.ron";
+const ARMOR_FILE_NAMES: &[&str] = &[HELMETS_FILE, CHESTS_FILE, ARMS_FILE, WAISTS_FILE, LEGS_FILE];
+
+#[derive(Debug, Default, Clone)]
+struct ArmorLists {
+    helmets: Vec<Armor>,
+    chests: Vec<Armor>,
+    arms: Vec<Armor>,
+    waists: Vec<Armor>,
+    legs: Vec<Armor>,
+}
+
+async fn fetch_armors() -> Result<ArmorLists, &'static str> {
+    // TODO real error management
+    let fetch_futures = ARMOR_FILE_NAMES
+        .iter()
+        .map(|s| fetch(format!("{}{}", BASE_URL_ARMORS, s)));
+
+    let responses: Vec<Response> = join_all(fetch_futures).await.drain(..).flatten().collect();
+    let text_futures = responses.iter().map(|resp| resp.text());
+    let armors: Vec<Vec<Armor>> = join_all(text_futures)
+        .await
+        .drain(..)
+        .flatten()
+        .map(|ron_file| ron::de::from_str(&ron_file))
+        .flatten()
+        .collect();
+
+    if armors.len() == 5 {
+        Ok(ArmorLists {
+            helmets: armors[0].clone(),
+            chests: armors[1].clone(),
+            arms: armors[2].clone(),
+            waists: armors[3].clone(),
+            legs: armors[4].clone(),
+        })
+    } else {
+        Err("Error while fetching armors")
     }
 }
 
@@ -58,6 +128,9 @@ struct Model {
     wishes: Vec<(Skill, u8)>,
     filter: String,
     changing_wish_index: Option<usize>,
+    page: Page,
+    armors: ArmorLists,
+    searched_builds: Vec<Build>,
 }
 
 // ------ ------
@@ -65,7 +138,7 @@ struct Model {
 // ------ ------
 
 enum Msg {
-    ToggleLoading,
+    SearchBuilds,
     ChangeFilter(String),
     AddWish,
     DeleteWish(IndexWish),
@@ -73,17 +146,18 @@ enum Msg {
     ToggleWishModal(Option<IndexWish>),
     ChangeWish(IndexWish, Skill),
     Nothing,
+    //ChangePage(Page),
+    EndArmorInitialization(ArmorLists),
+    EndSearch(Vec<Build>),
 }
 
 type IndexWish = usize;
 type AmountSkill = u8;
 
-// `update` describes how to handle each `Msg`.
 // I'm doing some dangerous manipulations for the sake of performance and
 // memory, this is pretty useless. I'll remove them when it will be horrible
-fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
+fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::ToggleLoading => model.is_loading ^= true,
         Msg::ChangeFilter(filter) => {
             model.filter = filter;
             model.filtered_skills = model
@@ -152,7 +226,40 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
             model.is_choosing_skill ^= true
         }
         Msg::Nothing => {}
+        //Msg::ChangePage(page) => model.page = page,
+        Msg::SearchBuilds => {
+            // I don't understand why there is no animation
+            model.is_loading = true;
+            let wishes = model.wishes.clone();
+            let armors = model.armors.clone();
+            orders.after_next_render(|_| search_builds(wishes, armors));
+        }
+        Msg::EndArmorInitialization(armors) => {
+            model.armors = armors;
+            model.page = Page::Wishes
+        }
+        Msg::EndSearch(builds) => {
+            model.searched_builds = builds;
+            model.is_loading = false;
+            model.page = Page::Results;
+        }
     }
+}
+
+fn search_builds(wishes: Vec<(Skill, u8)>, armors: ArmorLists) -> Msg {
+    Msg::EndSearch(pre_selection_then_brute_force_search(
+        &wishes,
+        AllArmorSlices {
+            helmets: &armors.helmets,
+            chests: &armors.chests,
+            waists: &armors.waists,
+            arms: &armors.arms,
+            legs: &armors.legs,
+            talismans: &[],
+        },
+        Gender::Male,
+        [0, 0, 0],
+    ))
 }
 
 // ------ ------
@@ -162,30 +269,41 @@ fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
 // `view` describes what to display.
 fn view(model: &Model) -> Node<Msg> {
     let disabled_delete = model.wishes.len() <= 1;
-    div![
-        C!["container", "has-text-centered"],
-        view_modal(
-            model.is_choosing_skill,
-            &model.filtered_skills,
-            model.changing_wish_index
-        ),
-        view_buttons(model.is_loading, model.wishes.len() == Skill::ALL.len()),
-        div![
-            style! {
-                St::Display => "inline-block"
-            },
-            model
-                .wishes
-                .iter()
-                .enumerate()
-                .map(|(index, wish)| view_wish_field(
-                    *wish,
-                    disabled_delete,
-                    index,
-                    model.is_loading
-                ))
-        ]
-    ]
+    match model.page {
+        Page::Wishes => div![
+            C!["container", "has-text-centered"],
+            view_modal(
+                model.is_choosing_skill,
+                &model.filtered_skills,
+                model.changing_wish_index
+            ),
+            view_buttons(model.is_loading, model.wishes.len() == Skill::ALL.len()),
+            div![
+                style! {
+                    St::Display => "inline-block"
+                },
+                model
+                    .wishes
+                    .iter()
+                    .enumerate()
+                    .map(|(index, wish)| view_wish_field(
+                        *wish,
+                        disabled_delete,
+                        index,
+                        model.is_loading
+                    ))
+            ]
+        ],
+        Page::Results => div![
+            C!["columns", "is-mobile"],
+            div![C!["column"], p![C!["bd-notification is-primary"], "lol"]],
+            div![C!["column"], "lol"]
+        ],
+        Page::ArmorsFetching => div![
+            C!["container", "has-text-centered"],
+            h1![C!["title"], "Fetching armors..."]
+        ],
+    }
 }
 
 fn view_buttons(is_loading: bool, add_disabled: bool) -> Node<Msg> {
@@ -207,7 +325,7 @@ fn view_buttons(is_loading: bool, add_disabled: bool) -> Node<Msg> {
                 C!["button", "is-info", IF!(is_loading => "is-loading")],
                 span![C!["icon"], i![C!["fas", "fa-search"]]],
                 span!["Search builds"],
-                ev(Ev::Click, |_| Msg::ToggleLoading)
+                ev(Ev::Click, |_| Msg::SearchBuilds)
             ]
         ],
     ]

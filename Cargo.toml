@@ -19,6 +19,7 @@ wasm-bindgen-test = "0.3"
 seed = "0.8"
 rab-core = "0.3"
 lexical-sort = "0.3"
+ron = "0.6"
 
 [profile.release]
 lto = true
