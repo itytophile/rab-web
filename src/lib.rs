@@ -228,11 +228,15 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::Nothing => {}
         //Msg::ChangePage(page) => model.page = page,
         Msg::SearchBuilds => {
-            // I don't understand why there is no animation
             model.is_loading = true;
             let wishes = model.wishes.clone();
             let armors = model.armors.clone();
-            orders.after_next_render(|_| search_builds(wishes, armors));
+            // I don't understand why there is no animation
+            // orders.after_next_render(|_| search_builds(wishes, armors));
+
+            orders
+                .perform_cmd(cmds::timeout(10, || search_builds(wishes, armors)))
+                .force_render_now();
         }
         Msg::EndArmorInitialization(armors) => {
             model.armors = armors;
@@ -294,16 +298,120 @@ fn view(model: &Model) -> Node<Msg> {
                     ))
             ]
         ],
-        Page::Results => div![
-            C!["columns", "is-mobile"],
-            div![C!["column"], p![C!["bd-notification is-primary"], "lol"]],
-            div![C!["column"], "lol"]
-        ],
+        Page::Results => view_builds(&model.searched_builds),
         Page::ArmorsFetching => div![
             C!["container", "has-text-centered"],
             h1![C!["title"], "Fetching armors..."]
         ],
     }
+}
+
+fn view_builds(builds: &[Build]) -> Node<Msg> {
+    div![builds.iter().enumerate().map(|(index, build)| div![
+        C!["columns", "is-mobile", "is-multiline", "has-text-centered"],
+        div![
+            C!["column", "is-half-mobile"],
+            p![
+                C![
+                    "notification",
+                    if index % 2 == 0 {
+                        "is-primary"
+                    } else {
+                        "is-info"
+                    }
+                ],
+                match build.helmet.as_ref() {
+                    Some((a, _)) => &a.name,
+                    _ => "None",
+                }
+            ]
+        ],
+        div![
+            C!["column", "is-half-mobile"],
+            p![
+                C![
+                    "notification",
+                    if index % 2 == 0 {
+                        "is-primary"
+                    } else {
+                        "is-info"
+                    }
+                ],
+                match build.chest.as_ref() {
+                    Some((a, _)) => &a.name,
+                    _ => "None",
+                }
+            ]
+        ],
+        div![
+            C!["column", "is-half-mobile"],
+            p![
+                C![
+                    "notification",
+                    if index % 2 == 0 {
+                        "is-primary"
+                    } else {
+                        "is-info"
+                    }
+                ],
+                match build.arm.as_ref() {
+                    Some((a, _)) => &a.name,
+                    _ => "None",
+                }
+            ]
+        ],
+        div![
+            C!["column", "is-half-mobile"],
+            p![
+                C![
+                    "notification",
+                    if index % 2 == 0 {
+                        "is-primary"
+                    } else {
+                        "is-info"
+                    }
+                ],
+                match build.waist.as_ref() {
+                    Some((a, _)) => &a.name,
+                    _ => "None",
+                }
+            ]
+        ],
+        div![
+            C!["column", "is-half-mobile"],
+            p![
+                C![
+                    "notification",
+                    if index % 2 == 0 {
+                        "is-primary"
+                    } else {
+                        "is-info"
+                    }
+                ],
+                match build.leg.as_ref() {
+                    Some((a, _)) => &a.name,
+                    _ => "None",
+                }
+            ]
+        ],
+        div![
+            C!["column", "is-half-mobile"],
+            p![
+                C![
+                    "notification",
+                    if index % 2 == 0 {
+                        "is-primary"
+                    } else {
+                        "is-info"
+                    }
+                ],
+                match build.talisman.as_ref() {
+                    Some((a, _)) => &a.name,
+                    _ => "None",
+                }
+            ]
+        ]
+    ])]
 }
 
 fn view_buttons(is_loading: bool, add_disabled: bool) -> Node<Msg> {
@@ -362,7 +470,7 @@ fn view_wish_field(
                     At::Max => limit,
                     At::Disabled => is_loading.as_at_value()
                 },
-                input_ev(Ev::Input, move |new_amount| Msg::ChangeWishAmount(
+                input_ev(Ev::Blur, move |new_amount| Msg::ChangeWishAmount(
                     index,
                     min(new_amount.parse::<u8>().unwrap_or(amount), limit)
                 ))
