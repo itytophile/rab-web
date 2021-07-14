@@ -146,7 +146,7 @@ enum Msg {
     ToggleWishModal(Option<IndexWish>),
     ChangeWish(IndexWish, Skill),
     Nothing,
-    //ChangePage(Page),
+    ChangePage(Page),
     EndArmorInitialization(ArmorLists),
     EndSearch(Vec<Build>),
 }
@@ -226,7 +226,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.is_choosing_skill ^= true
         }
         Msg::Nothing => {}
-        //Msg::ChangePage(page) => model.page = page,
+        Msg::ChangePage(page) => model.page = page,
         Msg::SearchBuilds => {
             model.is_loading = true;
             let wishes = model.wishes.clone();
@@ -298,7 +298,19 @@ fn view(model: &Model) -> Node<Msg> {
                     ))
             ]
         ],
-        Page::Results => view_builds(&model.searched_builds),
+        Page::Results => div![
+            C!["container", "has-text-centered"],
+            div![
+                C!["field"],
+                button![
+                    C!["button", "is-link"],
+                    span![C!["icon"], i![C!["fas", "fa-arrow-left"]]],
+                    span!["Back"],
+                    ev(Ev::Click, |_| Msg::ChangePage(Page::Wishes))
+                ]
+            ],
+            view_builds(&model.searched_builds)
+        ],
         Page::ArmorsFetching => div![
             C!["container", "has-text-centered"],
             h1![C!["title"], "Fetching armors..."]
@@ -308,109 +320,33 @@ fn view(model: &Model) -> Node<Msg> {
 
 fn view_builds(builds: &[Build]) -> Node<Msg> {
     div![builds.iter().enumerate().map(|(index, build)| div![
-        C!["columns", "is-mobile", "is-multiline", "has-text-centered"],
-        div![
-            C!["column", "is-half-mobile"],
-            p![
-                C![
-                    "notification",
-                    if index % 2 == 0 {
-                        "is-primary"
-                    } else {
-                        "is-info"
-                    }
-                ],
-                match build.helmet.as_ref() {
-                    Some((a, _)) => &a.name,
-                    _ => "None",
-                }
-            ]
-        ],
-        div![
-            C!["column", "is-half-mobile"],
-            p![
-                C![
-                    "notification",
-                    if index % 2 == 0 {
-                        "is-primary"
-                    } else {
-                        "is-info"
-                    }
-                ],
-                match build.chest.as_ref() {
-                    Some((a, _)) => &a.name,
-                    _ => "None",
-                }
-            ]
-        ],
-        div![
-            C!["column", "is-half-mobile"],
-            p![
-                C![
-                    "notification",
-                    if index % 2 == 0 {
-                        "is-primary"
-                    } else {
-                        "is-info"
-                    }
-                ],
-                match build.arm.as_ref() {
-                    Some((a, _)) => &a.name,
-                    _ => "None",
-                }
-            ]
-        ],
-        div![
-            C!["column", "is-half-mobile"],
-            p![
-                C![
-                    "notification",
-                    if index % 2 == 0 {
-                        "is-primary"
-                    } else {
-                        "is-info"
-                    }
-                ],
-                match build.waist.as_ref() {
-                    Some((a, _)) => &a.name,
-                    _ => "None",
-                }
-            ]
-        ],
-        div![
-            C!["column", "is-half-mobile"],
-            p![
-                C![
-                    "notification",
-                    if index % 2 == 0 {
-                        "is-primary"
-                    } else {
-                        "is-info"
-                    }
-                ],
-                match build.leg.as_ref() {
-                    Some((a, _)) => &a.name,
-                    _ => "None",
-                }
-            ]
-        ],
-        div![
-            C!["column", "is-half-mobile"],
-            p![
-                C![
-                    "notification",
-                    if index % 2 == 0 {
-                        "is-primary"
-                    } else {
-                        "is-info"
-                    }
-                ],
-                match build.talisman.as_ref() {
-                    Some((a, _)) => &a.name,
-                    _ => "None",
-                }
-            ]
+        C!["columns", "is-multiline", "has-text-centered", "is-mobile"],
+        [
+            build.helmet.as_ref(),
+            build.chest.as_ref(),
+            build.arm.as_ref(),
+            build.waist.as_ref(),
+            build.leg.as_ref(),
+            build.talisman.as_ref()
         ]
+        .iter()
+        .map(|part| div![
+            C!["column", "is-half"],
+            p![
+                C![
+                    "notification",
+                    if index % 2 == 0 {
+                        "is-primary"
+                    } else {
+                        "is-info"
+                    }
+                ],
+                match part {
+                    Some((a, _)) => &a.name,
+                    _ => "None",
+                }
+            ]
+        ])
     ])]
 }
 
