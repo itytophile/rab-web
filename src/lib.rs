@@ -271,39 +271,45 @@ fn search_builds(wishes: Vec<(Skill, u8)>, armors: ArmorLists) -> Msg {
 // ------ ------
 
 // `view` describes what to display.
-fn view(model: &Model) -> Node<Msg> {
+fn view(model: &Model) -> Vec<Node<Msg>> {
     let disabled_delete = model.wishes.len() <= 1;
-    match model.page {
-        Page::Wishes => div![
-            C!["container", "has-text-centered"],
-            view_modal(
-                model.is_choosing_skill,
-                &model.filtered_skills,
-                model.changing_wish_index
-            ),
-            view_buttons(model.is_loading, model.wishes.len() == Skill::ALL.len()),
-            div![
-                style! {
-                    St::Display => "inline-block"
-                },
-                model
-                    .wishes
-                    .iter()
-                    .enumerate()
-                    .map(|(index, wish)| view_wish_field(
-                        *wish,
-                        disabled_delete,
-                        index,
-                        model.is_loading
-                    ))
-            ]
-        ],
-        Page::Results => view_builds(&model.searched_builds),
-        Page::ArmorsFetching => div![
-            C!["container", "has-text-centered"],
-            h1![C!["title"], "Fetching armors..."]
-        ],
-    }
+    nodes![
+        view_navbar(),
+        section![
+            C!["section"],
+            match model.page {
+                Page::Wishes => div![
+                    C!["container", "has-text-centered"],
+                    view_modal(
+                        model.is_choosing_skill,
+                        &model.filtered_skills,
+                        model.changing_wish_index
+                    ),
+                    view_buttons(model.is_loading, model.wishes.len() == Skill::ALL.len()),
+                    div![
+                        style! {
+                            St::Display => "inline-block"
+                        },
+                        model
+                            .wishes
+                            .iter()
+                            .enumerate()
+                            .map(|(index, wish)| view_wish_field(
+                                *wish,
+                                disabled_delete,
+                                index,
+                                model.is_loading
+                            ))
+                    ]
+                ],
+                Page::Results => view_builds(&model.searched_builds),
+                Page::ArmorsFetching => div![
+                    C!["container", "has-text-centered"],
+                    h1![C!["title"], "Fetching armors..."]
+                ],
+            }
+        ]
+    ]
 }
 
 fn view_builds(builds: &[Build]) -> Node<Msg> {
@@ -505,6 +511,122 @@ fn view_filter_input() -> Node<Msg> {
                 C!["icon", "is-small", "is-left"],
                 i![C!["fas", "fa-filter"]]
             ],
+        ]
+    ]
+}
+
+/*
+<nav class="navbar" role="navigation" aria-label="main navigation">
+    <div class="navbar-brand">
+        <a class="navbar-item" href="https://bulma.io">
+            <img src="https://bulma.io/images/bulma-logo.png" width="112" height="28">
+        </a>
+
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
+            data-target="navbarBasicExample">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+    </div>
+
+    <div id="navbarBasicExample" class="navbar-menu">
+        <div class="navbar-start">
+            <a class="navbar-item">
+                Home
+            </a>
+
+            <a class="navbar-item">
+                Documentation
+            </a>
+
+            <div class="navbar-item has-dropdown is-hoverable">
+                <a class="navbar-link">
+                    More
+                </a>
+
+                <div class="navbar-dropdown">
+                    <a class="navbar-item">
+                        About
+                    </a>
+                    <a class="navbar-item">
+                        Jobs
+                    </a>
+                    <a class="navbar-item">
+                        Contact
+                    </a>
+                    <hr class="navbar-divider">
+                    <a class="navbar-item">
+                        Report an issue
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="navbar-end">
+            <div class="navbar-item">
+                <div class="buttons">
+                    <a class="button is-primary">
+                        <strong>Sign up</strong>
+                    </a>
+                    <a class="button is-light">
+                        Log in
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+*/
+
+fn view_navbar() -> Node<Msg> {
+    nav![
+        C!["navbar"],
+        attrs! {
+            At::AriaRoleDescription => "navigation",
+            At::AriaLabel => "main navigation"
+        },
+        div![
+            C!["navbar-brand"],
+            a![
+                C!["navbar-item"],
+                attrs! {At::Href => "/"},
+                img![attrs! {
+                    At::Src => "https://bulma.io/images/bulma-logo.png",
+                    At::Width => "112",
+                    At::Height => "28"
+                }]
+            ],
+            a![
+                C!["navbar-burger"],
+                attrs! {
+                    At::AriaRoleDescription => "button",
+                    At::AriaLabel => "menu",
+                    At::AriaExpanded => "false"
+                },
+                span![attrs! {At::AriaHidden => "true"}],
+                span![attrs! {At::AriaHidden => "true"}],
+                span![attrs! {At::AriaHidden => "true"}]
+            ]
+        ],
+        div![
+            C!["navbar-menu"],
+            div![
+                C!["navbar-start"],
+                a![C!["navbar-item"], "Home"],
+                a![C!["navbar-item"], "Documentation"]
+            ],
+            div![
+                C!["navbar-end"],
+                div![
+                    C!["navbar-item"],
+                    div![
+                        C!["buttons"],
+                        a![C!["button", "is-primary"], strong!["Sign up"]],
+                        a![C!["button", "is-light"], "Log in"]
+                    ]
+                ]
+            ]
         ]
     ]
 }
