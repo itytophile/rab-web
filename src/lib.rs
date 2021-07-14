@@ -41,8 +41,6 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
         }))
     });
 
-    // orders.perform_cmd(async { log!(fetch_armors().await.expect("lol")) });
-
     Model {
         is_loading: false,
         is_choosing_skill: false,
@@ -54,6 +52,7 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
         page: Page::ArmorsFetching,
         armors: ArmorLists::default(),
         searched_builds: vec![],
+        is_burger_active: false,
     }
 }
 
@@ -131,6 +130,7 @@ struct Model {
     page: Page,
     armors: ArmorLists,
     searched_builds: Vec<Build>,
+    is_burger_active: bool,
 }
 
 // ------ ------
@@ -149,6 +149,7 @@ enum Msg {
     ChangePage(Page),
     EndArmorInitialization(ArmorLists),
     EndSearch(Vec<Build>),
+    ToggleBurger,
 }
 
 type IndexWish = usize;
@@ -247,6 +248,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.is_loading = false;
             model.page = Page::Results;
         }
+        Msg::ToggleBurger => model.is_burger_active ^= true,
     }
 }
 
@@ -274,7 +276,7 @@ fn search_builds(wishes: Vec<(Skill, u8)>, armors: ArmorLists) -> Msg {
 fn view(model: &Model) -> Vec<Node<Msg>> {
     let disabled_delete = model.wishes.len() <= 1;
     nodes![
-        view_navbar(),
+        view_navbar(model.is_burger_active),
         section![
             C!["section"],
             match model.page {
@@ -451,71 +453,7 @@ fn view_filter_input() -> Node<Msg> {
     ]
 }
 
-/*
-<nav class="navbar" role="navigation" aria-label="main navigation">
-    <div class="navbar-brand">
-        <a class="navbar-item" href="https://bulma.io">
-            <img src="https://bulma.io/images/bulma-logo.png" width="112" height="28">
-        </a>
-
-        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
-            data-target="navbarBasicExample">
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-            <span aria-hidden="true"></span>
-        </a>
-    </div>
-
-    <div id="navbarBasicExample" class="navbar-menu">
-        <div class="navbar-start">
-            <a class="navbar-item">
-                Home
-            </a>
-
-            <a class="navbar-item">
-                Documentation
-            </a>
-
-            <div class="navbar-item has-dropdown is-hoverable">
-                <a class="navbar-link">
-                    More
-                </a>
-
-                <div class="navbar-dropdown">
-                    <a class="navbar-item">
-                        About
-                    </a>
-                    <a class="navbar-item">
-                        Jobs
-                    </a>
-                    <a class="navbar-item">
-                        Contact
-                    </a>
-                    <hr class="navbar-divider">
-                    <a class="navbar-item">
-                        Report an issue
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="navbar-end">
-            <div class="navbar-item">
-                <div class="buttons">
-                    <a class="button is-primary">
-                        <strong>Sign up</strong>
-                    </a>
-                    <a class="button is-light">
-                        Log in
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</nav>
-*/
-
-fn view_navbar() -> Node<Msg> {
+fn view_navbar(is_burger_active: bool) -> Node<Msg> {
     nav![
         C!["navbar"],
         attrs! {
@@ -534,7 +472,7 @@ fn view_navbar() -> Node<Msg> {
                 }]
             ],
             a![
-                C!["navbar-burger"],
+                C!["navbar-burger", IF!(is_burger_active => "is-active")],
                 attrs! {
                     At::AriaRoleDescription => "button",
                     At::AriaLabel => "menu",
@@ -542,25 +480,23 @@ fn view_navbar() -> Node<Msg> {
                 },
                 span![attrs! {At::AriaHidden => "true"}],
                 span![attrs! {At::AriaHidden => "true"}],
-                span![attrs! {At::AriaHidden => "true"}]
+                span![attrs! {At::AriaHidden => "true"}],
+                ev(Ev::Click, move |_| Msg::ToggleBurger)
             ]
         ],
         div![
-            C!["navbar-menu"],
+            C!["navbar-menu", IF!(is_burger_active => "is-active")],
             div![
                 C!["navbar-start"],
-                a![C!["navbar-item"], "Home"],
-                a![C!["navbar-item"], "Documentation"]
-            ],
-            div![
-                C!["navbar-end"],
-                div![
+                a![
                     C!["navbar-item"],
-                    div![
-                        C!["buttons"],
-                        a![C!["button", "is-primary"], strong!["Sign up"]],
-                        a![C!["button", "is-light"], "Log in"]
-                    ]
+                    "Home",
+                    ev(Ev::Click, |_| Msg::ChangePage(Page::Wishes))
+                ],
+                a![
+                    C!["navbar-item"],
+                    "Results",
+                    ev(Ev::Click, |_| Msg::ChangePage(Page::Results))
                 ]
             ]
         ]
