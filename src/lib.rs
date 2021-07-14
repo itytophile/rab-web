@@ -22,6 +22,7 @@ enum Page {
     Wishes,
     Results,
     ArmorsFetching,
+    Talismans,
 }
 
 fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
@@ -289,9 +290,7 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
                     ),
                     view_buttons(model.is_loading, model.wishes.len() == Skill::ALL.len()),
                     div![
-                        style! {
-                            St::Display => "inline-block"
-                        },
+                        style! {St::Display=>"inline-block"},
                         model
                             .wishes
                             .iter()
@@ -310,8 +309,8 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
                         C!["field"],
                         button![
                             C!["button", "is-link"],
-                            span![C!["icon"], i![C!["fas", "fa-arrow-left"]]],
-                            span!["Back"],
+                            span![C!["icon"], i![C!["fas", "fa-home"]]],
+                            span!["Home"],
                             ev(Ev::Click, |_| Msg::ChangePage(Page::Wishes))
                         ]
                     ],
@@ -320,6 +319,26 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
                 Page::ArmorsFetching => div![
                     C!["container", "has-text-centered"],
                     h1![C!["title"], "Fetching armors..."]
+                ],
+                Page::Talismans => div![
+                    C!["field", "is-grouped", "is-grouped-centered"],
+                    p![
+                        C!["control"],
+                        button![
+                            C!["button", "is-link"],
+                            span![C!["icon"], i![C!["fas", "fa-home"]]],
+                            span!["Home"],
+                            ev(Ev::Click, |_| Msg::ChangePage(Page::Wishes))
+                        ]
+                    ],
+                    p![
+                        C!["control"],
+                        button![
+                            C!["button", "is-success"],
+                            span![C!["icon"], i![C!["fas", "fa-plus"]]],
+                            span!["Add talisman"]
+                        ]
+                    ]
                 ],
             }
         ]
@@ -497,6 +516,11 @@ fn view_navbar(is_burger_active: bool) -> Node<Msg> {
                     C!["navbar-item"],
                     "Results",
                     ev(Ev::Click, |_| Msg::ChangePage(Page::Results))
+                ],
+                a![
+                    C!["navbar-item"],
+                    "Talismans",
+                    ev(Ev::Click, |_| Msg::ChangePage(Page::Talismans))
                 ]
             ]
         ]
