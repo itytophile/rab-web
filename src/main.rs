@@ -5,13 +5,27 @@ type Wish = (Skill, u8);
 
 #[component]
 fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
-    let wishes = ctx.create_signal(vec![ctx.create_signal((Skill::Botanist, 1u8))]);
+    let wishes = ctx.create_signal(vec![(0, ctx.create_signal((Skill::Botanist, 1u8)))]);
 
     let on_click = |_| {
-        let mut tmp = wishes.get().to_vec();
-        tmp.push(ctx.create_signal((Skill::Botanist, 1u8)));
-        wishes.set(tmp);
+        wishes.set(
+            wishes
+                .get()
+                .iter()
+                .map(|&(_, signal)| signal)
+                .chain(std::iter::once(ctx.create_signal((Skill::Botanist, 1u8))))
+                .enumerate()
+                .collect(),
+        );
     };
+
+    fn remove<T: Clone>(index: usize, wishes: &Signal<Vec<T>>) -> impl Fn(Event) + '_ {
+        move |_| {
+            let mut tmp = wishes.get().to_vec();
+            tmp.remove(index);
+            wishes.set(tmp)
+        }
+    }
 
     view! { ctx,
         section(class="section") {
@@ -23,10 +37,11 @@ fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
                 }
                 Indexed {
                     iterable: wishes,
-                    view: move |ctx, wish| view! { ctx,
+                    view: move |ctx, (index, wish)| view! { ctx,
                         div(class="field has-addons") {
-                            Button(ButtonType::Remove, |_|{}, ||false)
+                            Button(ButtonType::Remove, remove(index, wishes), ||false)
                             WishRow(wish)
+                            (index)
                         }
                     }
                 }
