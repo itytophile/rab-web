@@ -69,7 +69,7 @@ where
     let (skill, amount) = wish;
 
     view! { ctx,
-        SelectSkill()
+        SelectSkill(skill)
         Button(ButtonType::Minus, decrement)
         AmountText(amount)
         Button(ButtonType::Plus, increment)
@@ -77,12 +77,23 @@ where
 }
 
 #[component]
-fn SelectSkill<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn SelectSkill<G: Html>(ctx: ScopeRef, skill: Skill) -> View<G> {
+    let name = format!("{skill:?}");
+    let options: View<G> = View::new_fragment(
+        Skill::ALL
+            .iter()
+            .map(|skill| format!("{skill:?}"))
+            .map(|name| {
+                let label = name.clone();
+                view! {ctx, option(value=name){(label)}}
+            })
+            .collect(),
+    );
     view! { ctx,
         div(class="control") {
             div(class="select") {
-                select {
-                    option {"lol"}
+                select(value=name) {
+                    (options)
                 }
             }
         }
