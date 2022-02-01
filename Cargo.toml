@@ -7,24 +7,8 @@ description = "Rusty Armor Builds - Monster Hunter Rise Armor Set Creation Tool 
 keywords = ["monster", "hunter", "rise", "armor", "search", "web"]
 license = "GPL-3.0"
 readme = "./README.md"
-edition = "2018"
-
-[lib]
-crate-type = ["cdylib"]
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3"
+edition = "2021"
 
 [dependencies]
-seed = "0.8"
+sycamore = { git = "https://github.com/sycamore-rs/sycamore" }
 rab-core = "0.3"
-lexical-sort = "0.3"
-ron = "0.6"
-
-[profile.release]
-lto = true
-opt-level = 'z'
-codegen-units = 1
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os']
