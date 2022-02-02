@@ -23,21 +23,15 @@ fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     };
 
     view! { ctx,
-        section(class="section") {
-            div(class="container") {
-                AddWish(available_skills, wishes)
-                Indexed {
-                    iterable: wishes,
-                    view: move |ctx, (skill, amount)| view! { ctx,
-                        div(class="field has-addons") {
-                            Button(ButtonType::Remove, remove_wish(skill), ||false)
-                            WishRow(skill, amount)
-                        }
-                    }
-                }
-            }
-        }
-    }
+    section(class="section") {
+        div(class="container") {
+            AddWish(available_skills, wishes)
+            Indexed {
+                iterable: wishes,
+                view: move |ctx, (skill, amount)| view! { ctx,
+                    div(class="field has-addons") {
+                        Button(ButtonType::Remove, remove_wish(skill), ||false)
+                        WishRow(skill, amount) } } } } } }
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -78,13 +72,10 @@ fn AddWish<'a, G: Html>(
     };
 
     view! { ctx,
-        div(class="field") {
-            div(class="control") {
-                button(class="button is-primary",on:click=|_|is_active.set(true)) {"Add wish"}
-            }
-        }
-        Select(available_skills, on_select, is_active)
-    }
+    div(class="field") {
+        div(class="control") {
+            button(class="button is-primary",on:click=|_|is_active.set(true)) {"Add wish"} } }
+    Select(available_skills, on_select, is_active) }
 }
 
 #[component]
@@ -95,11 +86,10 @@ fn WishRow<'a, G: Html>(ctx: ScopeRef<'a>, skill: DisplaySkill, amount: &'a Sign
     let is_min = || *amount.get() == 1;
 
     view! { ctx,
-        SkillText(skill)
-        Button(ButtonType::Minus, decrement, is_min)
-        AmountText(amount)
-        Button(ButtonType::Plus, increment, is_max)
-    }
+    SkillText(skill)
+    Button(ButtonType::Minus, decrement, is_min)
+    AmountText(amount)
+    Button(ButtonType::Plus, increment, is_max) }
 }
 
 #[component]
@@ -125,53 +115,37 @@ where
         iterable: options,
         view: move |ctx, option| {
             view! { ctx,
-                div(class="panel-block",on:click=move |_|on_select(option)) {
-                    (option)
-                }
-            }
+            div(class="panel-block",on:click=move |_|on_select(option)) { (option) } }
         },
     };
 
     view! { ctx,
-        div(class=(class())) {
-            div(class="modal-background",on:click=|_|is_active.set(false))
-            div(class="modal-card") {
-                header(class="modal-card-head") {
-                    div(class="modal-card-title mr-5") {
-                        p(class="control has-icons-left") {
-                            input(class="input is-fullwidth",type="text",placeholder="Search")
-                            span(class="icon is-left") {
-                                i(class="fas fa-search",aria-hidden=true)
-                            }
-                        }
-                    }
-
-                    button(class="delete",aria-label="close",on:click=|_|is_active.set(false))
-                }
-                div(class="modal-card-body") {
-                    Indexed(indexed_props)
-                }
-            }
-        }
-    }
+    div(class=(class())) {
+        div(class="modal-background",on:click=|_|is_active.set(false))
+        div(class="modal-card") {
+            header(class="modal-card-head") {
+                div(class="modal-card-title mr-5") {
+                    p(class="control has-icons-left") {
+                        input(class="input is-fullwidth",type="text",placeholder="Search")
+                        span(class="icon is-left") {
+                            i(class="fas fa-search",aria-hidden=true) } } }
+                button(class="delete",aria-label="close",on:click=|_|is_active.set(false)) }
+            div(class="modal-card-body") {
+                Indexed(indexed_props) } } } }
 }
 
 #[component]
 fn SkillText<G: Html>(ctx: ScopeRef, skill: DisplaySkill) -> View<G> {
     view! { ctx,
-        div(class="control") {
-            input(class="input", size=15, readonly=true, value=(skill))
-        }
-    }
+    div(class="control") {
+        input(class="input", size=15, readonly=true, value=(skill)) } }
 }
 
 #[component]
 fn AmountText<'a, G: Html>(ctx: ScopeRef<'a>, amount: &'a Signal<u8>) -> View<G> {
     view! { ctx,
-        div(class="control") {
-            input(class="input", size=1, readonly=true, value=(amount.get()))
-        }
-    }
+    div(class="control") {
+        input(class="input", size=1, readonly=true, value=(amount.get())) } }
 }
 
 enum ButtonType {
@@ -194,18 +168,13 @@ fn Button<'a, G: Html>(
     };
 
     view! { ctx,
-        div(class="control") {
-            button(class=button_class,on:click=on_click,disabled=is_disabled()) {
-                span(class="icon is-small") { i(class=icon_class) }
-            }
-        }
-    }
+    div(class="control") {
+        button(class=button_class,on:click=on_click,disabled=is_disabled()) {
+            span(class="icon is-small") { i(class=icon_class) } } } }
 }
 
 fn main() {
     sycamore::render(|ctx| {
-        view! { ctx,
-            App {}
-        }
+        view! { ctx, App {} }
     });
 }
