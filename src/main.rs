@@ -1,47 +1,37 @@
 use rab_core::armor_and_skills::Skill;
+use std::{
+    fmt::{Display, Formatter},
+    ops::Deref,
+};
 use sycamore::{prelude::*, rt::Event};
-
-type Wish = (Skill, u8);
 
 #[component]
 fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
-    let wishes = ctx.create_signal(vec![(0, ctx.create_signal((Skill::Botanist, 1u8)))]);
+    let wishes: &Signal<Vec<(DisplaySkill, &Signal<u8>)>> = ctx.create_signal(vec![]);
+    let available_skills: &Signal<Vec<DisplaySkill>> =
+        ctx.create_signal(Skill::ALL.iter().copied().map(DisplaySkill).collect());
 
-    let on_click = |_| {
-        wishes.set(
-            wishes
-                .get()
-                .iter()
-                .map(|&(_, signal)| signal)
-                .chain(std::iter::once(ctx.create_signal((Skill::Botanist, 1u8))))
-                .enumerate()
-                .collect(),
-        );
-    };
-
-    fn remove<T: Clone>(index: usize, wishes: &Signal<Vec<T>>) -> impl Fn(Event) + '_ {
+    let remove_wish = move |skill| {
         move |_| {
+            let mut tmp = available_skills.get().to_vec();
+            tmp.push(skill);
+            available_skills.set(tmp);
             let mut tmp = wishes.get().to_vec();
-            tmp.remove(index);
+            tmp.remove(tmp.iter().position(|(s, _)| *s == skill).unwrap());
             wishes.set(tmp)
         }
-    }
+    };
 
     view! { ctx,
         section(class="section") {
             div(class="container") {
-                div(class="field is-grouped") {
-                    p(class="control") {
-                        button(class="button is-success",on:click=on_click) {"Add Wish"}
-                    }
-                }
+                AddWish(available_skills, wishes)
                 Indexed {
                     iterable: wishes,
-                    view: move |ctx, (index, wish)| view! { ctx,
+                    view: move |ctx, (skill, amount)| view! { ctx,
                         div(class="field has-addons") {
-                            Button(ButtonType::Remove, remove(index, wishes), ||false)
-                            WishRow(wish)
-                            (index)
+                            Button(ButtonType::Remove, remove_wish(skill), ||false)
+                            WishRow(skill, amount)
                         }
                     }
                 }
@@ -50,55 +40,116 @@ fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     }
 }
 
-trait Lol {}
+#[derive(Clone, Copy, PartialEq)]
+struct DisplaySkill(Skill);
 
-impl Lol for Signal<Vec<((Skill, u8), usize)>> {}
+impl Display for DisplaySkill {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let DisplaySkill(skill) = self;
+        f.write_fmt(format_args!("{skill:?}"))
+    }
+}
 
-#[component]
-fn WishRow<'a, G: Html>(ctx: ScopeRef<'a>, wish: &'a Signal<Wish>) -> View<G> {
-    let decrement = move |_| {
-        let (skill, amount) = *wish.get();
-        wish.set((skill, amount - 1))
-    };
+impl Deref for DisplaySkill {
+    type Target = Skill;
 
-    let increment = move |_| {
-        let (skill, amount) = *wish.get();
-        wish.set((skill, amount + 1))
-    };
-
-    let is_limit = move || {
-        let (skill, amount) = *wish.get();
-        skill.get_limit() == amount
-    };
-
-    view! { ctx,
-        SelectSkill(wish)
-        Button(ButtonType::Minus, decrement, || wish.get().1 == 1)
-        AmountText(wish)
-        Button(ButtonType::Plus, increment, is_limit)
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
 #[component]
-fn SelectSkill<G: Html>(ctx: ScopeRef, wish: &Signal<Wish>) -> View<G> {
-    let name = format!("{:?}", wish.get().0);
+fn AddWish<'a, G: Html>(
+    ctx: ScopeRef<'a>,
+    available_skills: &'a Signal<Vec<DisplaySkill>>,
+    wishes: &'a Signal<Vec<(DisplaySkill, &'a Signal<u8>)>>,
+) -> View<G> {
+    let is_active = ctx.create_signal(false);
 
-    let options = View::new_fragment(
-        Skill::ALL
-            .iter()
-            .map(|skill| format!("{skill:?}"))
-            .map(|name| {
-                let label = name.clone();
-                view! {ctx, option(value=name){(label)}}
-            })
-            .collect(),
-    );
+    let on_select = |skill| {
+        let mut tmp = wishes.get().to_vec();
+        tmp.push((skill, ctx.create_signal(1)));
+        wishes.set(tmp);
+        is_active.set(false);
+
+        let mut tmp = available_skills.get().to_vec();
+        tmp.remove(tmp.iter().position(|s| *s == skill).unwrap());
+        available_skills.set(tmp);
+    };
 
     view! { ctx,
-        div(class="control") {
-            div(class="select") {
-                select(value=name) {
-                    (options)
+        div(class="field") {
+            div(class="control") {
+                button(class="button is-primary",on:click=|_|is_active.set(true)) {"Add wish"}
+            }
+        }
+        Select(available_skills, on_select, is_active)
+    }
+}
+
+#[component]
+fn WishRow<'a, G: Html>(ctx: ScopeRef<'a>, skill: DisplaySkill, amount: &'a Signal<u8>) -> View<G> {
+    let decrement = move |_| amount.set(*amount.get() - 1);
+    let increment = move |_| amount.set(*amount.get() + 1);
+    let is_max = move || skill.get_limit() == *amount.get();
+    let is_min = || *amount.get() == 1;
+
+    view! { ctx,
+        SkillText(skill)
+        Button(ButtonType::Minus, decrement, is_min)
+        AmountText(amount)
+        Button(ButtonType::Plus, increment, is_max)
+    }
+}
+
+#[component]
+fn Select<'a, T: 'static, G: Html>(
+    ctx: ScopeRef<'a>,
+    options: &'a Signal<Vec<T>>,
+    on_select: impl Fn(T) + Copy + 'a,
+    is_active: &'a Signal<bool>,
+) -> View<G>
+where
+    T: PartialEq + Clone + Display + Copy,
+{
+    let class = || {
+        if *is_active.get() {
+            "modal is-active"
+        } else {
+            "modal"
+        }
+    };
+
+    // to tell the compiler what the lifetimes are
+    let indexed_props = IndexedProps::<'a> {
+        iterable: options,
+        view: move |ctx, option| {
+            view! { ctx,
+                div(class="panel-block",on:click=move |_|on_select(option)) {
+                    (option)
+                }
+            }
+        },
+    };
+
+    view! { ctx,
+        div(class=(class())) {
+            div(class="modal-background",on:click=|_|is_active.set(false))
+            div(class="modal-card") {
+                header(class="modal-card-head") {
+                    div(class="modal-card-title mr-5") {
+                        p(class="control has-icons-left") {
+                            input(class="input is-fullwidth",type="text",placeholder="Search")
+                            span(class="icon is-left") {
+                                i(class="fas fa-search",aria-hidden=true)
+                            }
+                        }
+                    }
+
+                    button(class="delete",aria-label="close",on:click=|_|is_active.set(false))
+                }
+                div(class="modal-card-body") {
+                    Indexed(indexed_props)
                 }
             }
         }
@@ -106,12 +157,19 @@ fn SelectSkill<G: Html>(ctx: ScopeRef, wish: &Signal<Wish>) -> View<G> {
 }
 
 #[component]
-fn AmountText<'a, G: Html>(ctx: ScopeRef<'a>, wish: &'a Signal<Wish>) -> View<G> {
-    let lol = || wish.get().1;
-
+fn SkillText<G: Html>(ctx: ScopeRef, skill: DisplaySkill) -> View<G> {
     view! { ctx,
         div(class="control") {
-            input(class="input", size=1, readonly=true, value=(lol()))
+            input(class="input", size=15, readonly=true, value=(skill))
+        }
+    }
+}
+
+#[component]
+fn AmountText<'a, G: Html>(ctx: ScopeRef<'a>, amount: &'a Signal<u8>) -> View<G> {
+    view! { ctx,
+        div(class="control") {
+            input(class="input", size=1, readonly=true, value=(amount.get()))
         }
     }
 }
