@@ -10,5 +10,9 @@ readme = "./README.md"
 edition = "2021"
 
 [dependencies]
-sycamore = { git = "https://github.com/sycamore-rs/sycamore" }
+sycamore = { git = "https://github.com/sycamore-rs/sycamore", features = [
+    "futures",
+] }
 rab-core = "0.3"
+reqwasm = "0.4"
+anyhow = "1"

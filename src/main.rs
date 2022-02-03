@@ -1,15 +1,37 @@
+use anyhow::Result;
 use rab_core::armor_and_skills::Skill;
+use reqwasm::http::Request;
 use std::{
     fmt::{Display, Formatter},
     ops::Deref,
 };
-use sycamore::{prelude::*, rt::Event};
+use sycamore::{futures::ScopeFuturesExt, prelude::*, rt::Event};
+
+async fn fetch() -> Result<String> {
+    let body = Request::get(
+        "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/helmets.ron",
+    )
+    .send()
+    .await?
+    .text()
+    .await?;
+    Ok(body)
+}
 
 #[component]
 fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
-    let wishes: &Signal<Vec<(DisplaySkill, &Signal<u8>)>> = ctx.create_signal(vec![]);
-    let available_skills: &Signal<Vec<DisplaySkill>> =
-        ctx.create_signal(Skill::ALL.iter().copied().map(DisplaySkill).collect());
+    let wishes = ctx.create_signal(vec![]);
+    let available_skills = ctx.create_signal(
+        Skill::ALL
+            .iter()
+            .copied()
+            .map(DisplaySkill)
+            .collect::<Vec<DisplaySkill>>(),
+    );
+
+    let text = ctx.create_resource(async { fetch().await.unwrap_or_else(|_| "nope".to_string()) });
+
+    let lol = move || Option::clone(&text.get()).unwrap_or_else(|| "lol".to_owned());
 
     let remove_wish = move |skill| {
         move |_| {
@@ -23,6 +45,7 @@ fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     };
 
     view! { ctx,
+        (lol())
     section(class="section") {
         div(class="container") {
             AddWish(available_skills, wishes)
@@ -93,15 +116,12 @@ fn WishRow<'a, G: Html>(ctx: ScopeRef<'a>, skill: DisplaySkill, amount: &'a Sign
 }
 
 #[component]
-fn Select<'a, T: 'static, G: Html>(
+fn Select<'a, T: 'static + PartialEq + Clone + Display + Copy, G: Html>(
     ctx: ScopeRef<'a>,
     options: &'a Signal<Vec<T>>,
     on_select: impl Fn(T) + Copy + 'a,
     is_active: &'a Signal<bool>,
-) -> View<G>
-where
-    T: PartialEq + Clone + Display + Copy,
-{
+) -> View<G> {
     let class = || {
         if *is_active.get() {
             "modal is-active"
