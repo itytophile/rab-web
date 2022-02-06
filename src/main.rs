@@ -6,7 +6,7 @@ use std::{
     fmt::{Display, Formatter},
     ops::Deref,
 };
-use sycamore::{prelude::*, rt::Event, suspense::Suspense};
+use sycamore::{futures::ScopeSpawnFuture, prelude::*, rt::Event};
 
 const BASE_URL: &str =
     "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
@@ -20,6 +20,15 @@ async fn fetch_armors(name: &str) -> Result<Vec<Armor>> {
             .await?,
     )
     .map_err(|err| err.into())
+}
+
+#[derive(Default)]
+struct AllArmors {
+    helmets: Vec<Armor>,
+    chests: Vec<Armor>,
+    arms: Vec<Armor>,
+    waists: Vec<Armor>,
+    legs: Vec<Armor>,
 }
 
 #[component]
@@ -44,6 +53,18 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
         }
     };
 
+    let all_armors = ctx.create_signal(AllArmors::default());
+
+    ctx.spawn_future(async {
+        all_armors.set(AllArmors {
+            helmets: fetch_armors("helmets").await.unwrap(),
+            chests: fetch_armors("chests").await.unwrap(),
+            arms: fetch_armors("arms").await.unwrap(),
+            waists: fetch_armors("waists").await.unwrap(),
+            legs: fetch_armors("legs").await.unwrap(),
+        })
+    });
+
     view! { ctx,
     section(class="section") {
         div(class="container") {
@@ -67,22 +88,14 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                                 }
                                 WishRow { skill: skill, amount: amount } } } } }
                 div(class="column") {
-                    Suspense {
-                        fallback: view! { ctx, "Loading..." },
-                        BuildList {}
-                    }
+                        BuildList(all_armors)
                 } } } } }
 }
 
 #[component]
-async fn BuildList<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
-    let helmets = fetch_armors("helmets").await.unwrap();
-    let chests = fetch_armors("chests").await.unwrap();
-    let arms = fetch_armors("arms").await.unwrap();
-    let waists = fetch_armors("waists").await.unwrap();
-    let legs = fetch_armors("legs").await.unwrap();
-
+fn BuildList<'a, G: Html>(ctx: ScopeRef<'a>, all_armors: &'a Signal<AllArmors>) -> View<G> {
     view! {ctx,
+        (all_armors.get().helmets.len())
     article(class="panel is-primary") {
         p(class="panel-heading")
         a(class="panel-block") {
