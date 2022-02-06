@@ -5,7 +5,7 @@ use std::{
     fmt::{Display, Formatter},
     ops::Deref,
 };
-use sycamore::{futures::ScopeFuturesExt, prelude::*, rt::Event};
+use sycamore::{prelude::*, rt::Event};
 
 async fn fetch() -> Result<String> {
     let body = Request::get(
@@ -19,7 +19,7 @@ async fn fetch() -> Result<String> {
 }
 
 #[component]
-fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
+fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     let wishes = ctx.create_signal(vec![]);
     let available_skills = ctx.create_signal(
         Skill::ALL
@@ -28,10 +28,6 @@ fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
             .map(DisplaySkill)
             .collect::<Vec<DisplaySkill>>(),
     );
-
-    let text = ctx.create_resource(async { fetch().await.unwrap_or_else(|_| "nope".to_string()) });
-
-    let lol = move || Option::clone(&text.get()).unwrap_or_else(|| "lol".to_owned());
 
     let remove_wish = move |skill| {
         move |_| {
@@ -45,16 +41,19 @@ fn App<G: Html>(ctx: ScopeRef, _: ()) -> View<G> {
     };
 
     view! { ctx,
-        (lol())
     section(class="section") {
         div(class="container") {
-            AddWish(available_skills, wishes)
+            AddWish { available_skills: available_skills, wishes: wishes }
             Indexed {
                 iterable: wishes,
                 view: move |ctx, (skill, amount)| view! { ctx,
                     div(class="field has-addons") {
-                        Button(ButtonType::Remove, remove_wish(skill), ||false)
-                        WishRow(skill, amount) } } } } } }
+                        Button {
+                            button_type: ButtonType::Remove,
+                            on_click:remove_wish(skill),
+                            is_disabled: ||false
+                        }
+                        WishRow { skill: skill, amount: amount } } } } } } }
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -75,11 +74,19 @@ impl Deref for DisplaySkill {
     }
 }
 
+#[derive(Prop)]
+struct AddWishProps<'a> {
+    available_skills: &'a Signal<Vec<DisplaySkill>>,
+    wishes: &'a Signal<Vec<(DisplaySkill, &'a Signal<u8>)>>,
+}
+
 #[component]
 fn AddWish<'a, G: Html>(
     ctx: ScopeRef<'a>,
-    available_skills: &'a Signal<Vec<DisplaySkill>>,
-    wishes: &'a Signal<Vec<(DisplaySkill, &'a Signal<u8>)>>,
+    AddWishProps {
+        available_skills,
+        wishes,
+    }: AddWishProps<'a>,
 ) -> View<G> {
     let is_active = ctx.create_signal(false);
 
@@ -98,11 +105,24 @@ fn AddWish<'a, G: Html>(
     div(class="field") {
         div(class="control") {
             button(class="button is-primary",on:click=|_|is_active.set(true)) {"Add wish"} } }
-    Select(available_skills, on_select, is_active) }
+    Select {
+        options: available_skills,
+        on_select:on_select,
+        is_active:is_active
+    } }
+}
+
+#[derive(Prop)]
+struct WishRowProps<'a> {
+    skill: DisplaySkill,
+    amount: &'a Signal<u8>,
 }
 
 #[component]
-fn WishRow<'a, G: Html>(ctx: ScopeRef<'a>, skill: DisplaySkill, amount: &'a Signal<u8>) -> View<G> {
+fn WishRow<'a, G: Html>(
+    ctx: ScopeRef<'a>,
+    WishRowProps { skill, amount }: WishRowProps<'a>,
+) -> View<G> {
     let decrement = move |_| amount.set(*amount.get() - 1);
     let increment = move |_| amount.set(*amount.get() + 1);
     let is_max = move || skill.get_limit() == *amount.get();
@@ -110,17 +130,34 @@ fn WishRow<'a, G: Html>(ctx: ScopeRef<'a>, skill: DisplaySkill, amount: &'a Sign
 
     view! { ctx,
     SkillText(skill)
-    Button(ButtonType::Minus, decrement, is_min)
+    Button {
+        button_type: ButtonType::Minus,
+        on_click: decrement,
+        is_disabled: is_min
+    }
     AmountText(amount)
-    Button(ButtonType::Plus, increment, is_max) }
+    Button {
+        button_type: ButtonType::Plus,
+        on_click: increment,
+        is_disabled: is_max
+    } }
+}
+
+#[derive(Prop)]
+struct Select<'a, T, F> {
+    options: &'a Signal<Vec<T>>,
+    on_select: F,
+    is_active: &'a Signal<bool>,
 }
 
 #[component]
 fn Select<'a, T: 'static + PartialEq + Clone + Display + Copy, G: Html>(
     ctx: ScopeRef<'a>,
-    options: &'a Signal<Vec<T>>,
-    on_select: impl Fn(T) + Copy + 'a,
-    is_active: &'a Signal<bool>,
+    Select {
+        options,
+        on_select,
+        is_active,
+    }: Select<'a, T, impl Fn(T) + Copy + 'a>,
 ) -> View<G> {
     let class = || {
         if *is_active.get() {
@@ -174,12 +211,21 @@ enum ButtonType {
     Minus,
 }
 
+#[derive(Prop)]
+struct ButtonProps<C, D> {
+    button_type: ButtonType,
+    on_click: C,
+    is_disabled: D,
+}
+
 #[component]
 fn Button<'a, G: Html>(
     ctx: &'a Scope<'a>,
-    button_type: ButtonType,
-    on_click: impl Fn(Event) + 'a,
-    is_disabled: impl Fn() -> bool + 'a,
+    ButtonProps {
+        button_type,
+        on_click,
+        is_disabled,
+    }: ButtonProps<impl Fn(Event) + 'a, impl Fn() -> bool + 'a>,
 ) -> View<G> {
     let (button_class, icon_class) = match button_type {
         ButtonType::Remove => ("button is-danger", "fas fa-trash"),
