@@ -156,7 +156,9 @@ fn AddWish<'a, G: Html>(
 
     view! { ctx,
     div(class="control") {
-        button(class="button is-primary",on:click=|_|is_active.set(true)) {"Add wish"} }
+        button(class="button is-primary",on:click=|_|is_active.set(true)) {
+            span(class="icon is-small") { i(class="fas fa-pepper-hot")}
+            span {"Add wish"}} }
     Select {
         options: available_skills,
         on_select:on_select,
