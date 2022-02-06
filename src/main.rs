@@ -43,7 +43,13 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
     section(class="section") {
         div(class="container") {
-            AddWish { available_skills: available_skills, wishes: wishes }
+            div(class="field is-grouped") {
+                AddWish { available_skills: available_skills, wishes: wishes }
+                div(class="control") {
+                    button(class="button is-info") {
+                        span(class="icon is-small") {
+                            i(class="fas fa-search") }
+                        span {"Search builds"} } } }
             Indexed {
                 iterable: wishes,
                 view: move |ctx, (skill, amount)| view! { ctx,
@@ -102,9 +108,8 @@ fn AddWish<'a, G: Html>(
     };
 
     view! { ctx,
-    div(class="field") {
-        div(class="control") {
-            button(class="button is-primary",on:click=|_|is_active.set(true)) {"Add wish"} } }
+    div(class="control") {
+        button(class="button is-primary",on:click=|_|is_active.set(true)) {"Add wish"} }
     Select {
         options: available_skills,
         on_select:on_select,

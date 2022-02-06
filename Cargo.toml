@@ -11,7 +11,7 @@ edition = "2021"
 
 [dependencies]
 sycamore = { git = "https://github.com/sycamore-rs/sycamore", features = [
-    "futures",
+    "suspense",
 ] }
 rab-core = "0.3"
 reqwasm = "0.4"
