@@ -16,3 +16,4 @@ sycamore = { git = "https://github.com/sycamore-rs/sycamore", features = [
 rab-core = "0.3"
 reqwasm = "0.4"
 anyhow = "1"
+ron = "0.7"

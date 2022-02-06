@@ -1,21 +1,25 @@
 use anyhow::Result;
-use rab_core::armor_and_skills::Skill;
+use rab_core::armor_and_skills::{Armor, Skill};
 use reqwasm::http::Request;
+use ron::de::from_str;
 use std::{
     fmt::{Display, Formatter},
     ops::Deref,
 };
-use sycamore::{prelude::*, rt::Event};
+use sycamore::{prelude::*, rt::Event, suspense::Suspense};
 
-async fn fetch() -> Result<String> {
-    let body = Request::get(
-        "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/helmets.ron",
+const BASE_URL: &str =
+    "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
+
+async fn fetch_armors(name: &str) -> Result<Vec<Armor>> {
+    from_str(
+        &Request::get(&format!("{BASE_URL}{name}.ron"))
+            .send()
+            .await?
+            .text()
+            .await?,
     )
-    .send()
-    .await?
-    .text()
-    .await?;
-    Ok(body)
+    .map_err(|err| err.into())
 }
 
 #[component]
@@ -63,12 +67,21 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
                                 }
                                 WishRow { skill: skill, amount: amount } } } } }
                 div(class="column") {
-                    BuildList {}
+                    Suspense {
+                        fallback: view! { ctx, "Loading..." },
+                        BuildList {}
+                    }
                 } } } } }
 }
 
 #[component]
-fn BuildList<G: Html>(ctx: ScopeRef) -> View<G> {
+async fn BuildList<G: Html>(ctx: ScopeRef<'_>) -> View<G> {
+    let helmets = fetch_armors("helmets").await.unwrap();
+    let chests = fetch_armors("chests").await.unwrap();
+    let arms = fetch_armors("arms").await.unwrap();
+    let waists = fetch_armors("waists").await.unwrap();
+    let legs = fetch_armors("legs").await.unwrap();
+
     view! {ctx,
     article(class="panel is-primary") {
         p(class="panel-heading")
