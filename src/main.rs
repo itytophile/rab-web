@@ -43,23 +43,70 @@ fn App<G: Html>(ctx: ScopeRef) -> View<G> {
     view! { ctx,
     section(class="section") {
         div(class="container") {
-            div(class="field is-grouped") {
-                AddWish { available_skills: available_skills, wishes: wishes }
-                div(class="control") {
-                    button(class="button is-info") {
-                        span(class="icon is-small") {
-                            i(class="fas fa-search") }
-                        span {"Search builds"} } } }
-            Indexed {
-                iterable: wishes,
-                view: move |ctx, (skill, amount)| view! { ctx,
-                    div(class="field has-addons") {
-                        Button {
-                            button_type: ButtonType::Remove,
-                            on_click:remove_wish(skill),
-                            is_disabled: ||false
-                        }
-                        WishRow { skill: skill, amount: amount } } } } } } }
+            div(class="columns") {
+                div(class="column") {
+                    div(class="field is-grouped") {
+                        AddWish { available_skills: available_skills, wishes: wishes }
+                        div(class="control") {
+                            button(class="button is-info") {
+                                span(class="icon is-small") {
+                                    i(class="fas fa-search") }
+                                span {"Search builds"} } } }
+                    Indexed {
+                        iterable: wishes,
+                        view: move |ctx, (skill, amount)| view! { ctx,
+                            div(class="field has-addons") {
+                                Button {
+                                    button_type: ButtonType::Remove,
+                                    on_click:remove_wish(skill),
+                                    is_disabled: ||false
+                                }
+                                WishRow { skill: skill, amount: amount } } } } }
+                div(class="column") {
+                    BuildList {}
+                } } } } }
+}
+
+#[component]
+fn BuildList<G: Html>(ctx: ScopeRef) -> View<G> {
+    view! {ctx,
+    article(class="panel is-primary") {
+        p(class="panel-heading")
+        a(class="panel-block") {
+            "helmet"
+        }
+        a(class="panel-block") {
+            "chest"
+        }
+        a(class="panel-block") {
+            "arms"
+        }
+        a(class="panel-block") {
+            "waist"
+        }
+        a(class="panel-block") {
+            "legs"
+        }
+    }
+    article(class="panel is-primary") {
+        p(class="panel-heading")
+        a(class="panel-block") {
+            "helmet"
+        }
+        a(class="panel-block") {
+            "chest"
+        }
+        a(class="panel-block") {
+            "arms"
+        }
+        a(class="panel-block") {
+            "waist"
+        }
+        a(class="panel-block") {
+            "legs"
+        }
+    }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]
