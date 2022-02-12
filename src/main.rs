@@ -3,7 +3,10 @@
 use anyhow::Result;
 use dioxus::prelude::*;
 use im_rc::{HashSet, Vector};
-use rab_core::armor_and_skills::{Armor, Skill};
+use rab_core::{
+    armor_and_skills::{Armor, Gender, Skill},
+    build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
+};
 use reqwasm::http::Request;
 use ron::de::from_str;
 use std::{
@@ -51,12 +54,26 @@ struct AllArmors {
     legs: Vec<Armor>,
 }
 
+impl AllArmors {
+    fn as_slice(&self) -> AllArmorSlices {
+        AllArmorSlices {
+            arms: &self.arms,
+            chests: &self.chests,
+            helmets: &self.helmets,
+            legs: &self.legs,
+            talismans: &[],
+            waists: &self.waists,
+        }
+    }
+}
+
 pub fn app(cx: Scope) -> Element {
-    let (wishes, set_wishes) = use_state(&cx, Vector::<(DisplaySkill, u8)>::default);
+    let (wishes, set_wishes) = use_state(&cx, Vector::<(DisplaySkill, u8)>::new);
     let all_skills: HashSet<DisplaySkill> = Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: HashSet<DisplaySkill> =
         all_skills.difference(wishes.iter().map(|(skill, _)| *skill).collect());
     let (all_armors, set_all_armors) = use_state(&cx, || Option::<AllArmors>::None);
+    let (builds, set_builds) = use_state(&cx, Vec::<Build>::new);
 
     let rows = wishes.iter().enumerate().map(|(index, (skill, amount))| {
         rsx! {
@@ -92,6 +109,27 @@ pub fn app(cx: Scope) -> Element {
 
     let search_is_disabled = wishes.is_empty();
 
+    let search_builds = move |_| {
+        if let Some(all_armors) = all_armors {
+            set_builds(pre_selection_then_brute_force_search(
+                wishes
+                    .iter()
+                    .map(|(skill, amount)| (skill.0, *amount))
+                    .collect::<Vec<(Skill, u8)>>()
+                    .as_slice(),
+                all_armors.as_slice(),
+                Gender::Female,
+                [0, 0, 0],
+            ));
+        }
+    };
+
+    let build_views = builds.iter().map(|build| {
+        rsx! {BuildView {
+            b: build
+        }}
+    });
+
     cx.render(rsx!(section { class: "section",
         div { class: "container",
             div { class: "columns",
@@ -102,7 +140,7 @@ pub fn app(cx: Scope) -> Element {
                             set_wishes: set_wishes
                         }
                         div { class: "control",
-                            button { class: "{class_search_button}", disabled: "{search_is_disabled}",
+                            button { class: "{class_search_button}", disabled: "{search_is_disabled}", onclick: search_builds,
                                 span { class: "icon is-small",
                                     i { class: "fa-solid fa-magnifying-glass" }
                                 }
@@ -113,44 +151,39 @@ pub fn app(cx: Scope) -> Element {
                     rows
                 }
                 div { class: "column",
-                    article { class: "panel is-primary",
-                        p { class: "panel-heading" }
-                        a { class: "panel-block",
-                            "helmet"
-                        }
-                        a { class: "panel-block",
-                            "chest"
-                        }
-                        a { class: "panel-block",
-                            "arms"
-                        }
-                        a { class: "panel-block",
-                            "waist"
-                        }
-                        a { class: "panel-block",
-                            "legs"
-                        }
-                    }
-                    article { class: "panel is-primary",
-                        p { class: "panel-heading" }
-                        a { class: "panel-block",
-                            "helmet"
-                        }
-                        a { class: "panel-block",
-                            "chest"
-                        }
-                        a { class: "panel-block",
-                            "arms"
-                        }
-                        a { class: "panel-block",
-                            "waist"
-                        }
-                        a { class: "panel-block",
-                            "legs"
-                        }
-                    }
+                    build_views
                 }
             }
+        }
+    }))
+}
+
+fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>) -> String {
+    if let Some((armor, _)) = armor {
+        armor.name.clone()
+    } else {
+        "Free".to_owned()
+    }
+}
+
+#[inline_props] // can't use build a parameter name
+fn BuildView<'a>(cx: Scope, b: &'a Build) -> Element {
+    cx.render(rsx!(article { class: "panel is-primary",
+        p { class: "panel-heading" }
+        a { class: "panel-block",
+            [armor_to_string(b.helmet.as_ref())]
+        }
+        a { class: "panel-block",
+            [armor_to_string(b.chest.as_ref())]
+        }
+        a { class: "panel-block",
+            [armor_to_string(b.arm.as_ref())]
+        }
+        a { class: "panel-block",
+            [armor_to_string(b.waist.as_ref())]
+        }
+        a { class: "panel-block",
+            [armor_to_string(b.leg.as_ref())]
         }
     }))
 }
