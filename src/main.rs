@@ -1,4 +1,8 @@
+#![allow(non_snake_case)]
+
 use anyhow::Result;
+use dioxus::prelude::*;
+use im_rc::{HashSet, Vector};
 use rab_core::armor_and_skills::{Armor, Skill};
 use reqwasm::http::Request;
 use ron::de::from_str;
@@ -6,136 +10,8 @@ use std::{
     fmt::{Display, Formatter},
     ops::Deref,
 };
-use sycamore::{futures::ScopeSpawnFuture, prelude::*, rt::Event};
 
-const BASE_URL: &str =
-    "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
-
-async fn fetch_armors(name: &str) -> Result<Vec<Armor>> {
-    from_str(
-        &Request::get(&format!("{BASE_URL}{name}.ron"))
-            .send()
-            .await?
-            .text()
-            .await?,
-    )
-    .map_err(|err| err.into())
-}
-
-#[derive(Default)]
-struct AllArmors {
-    helmets: Vec<Armor>,
-    chests: Vec<Armor>,
-    arms: Vec<Armor>,
-    waists: Vec<Armor>,
-    legs: Vec<Armor>,
-}
-
-#[component]
-fn App<G: Html>(ctx: ScopeRef) -> View<G> {
-    let wishes = ctx.create_signal(vec![]);
-    let available_skills = ctx.create_signal(
-        Skill::ALL
-            .iter()
-            .copied()
-            .map(DisplaySkill)
-            .collect::<Vec<DisplaySkill>>(),
-    );
-
-    let remove_wish = move |skill| {
-        move |_| {
-            let mut tmp = available_skills.get().to_vec();
-            tmp.push(skill);
-            available_skills.set(tmp);
-            let mut tmp = wishes.get().to_vec();
-            tmp.remove(tmp.iter().position(|(s, _)| *s == skill).unwrap());
-            wishes.set(tmp)
-        }
-    };
-
-    let all_armors = ctx.create_signal(AllArmors::default());
-
-    ctx.spawn_future(async {
-        all_armors.set(AllArmors {
-            helmets: fetch_armors("helmets").await.unwrap(),
-            chests: fetch_armors("chests").await.unwrap(),
-            arms: fetch_armors("arms").await.unwrap(),
-            waists: fetch_armors("waists").await.unwrap(),
-            legs: fetch_armors("legs").await.unwrap(),
-        })
-    });
-
-    view! { ctx,
-    section(class="section") {
-        div(class="container") {
-            div(class="columns") {
-                div(class="column") {
-                    div(class="field is-grouped") {
-                        AddWish { available_skills: available_skills, wishes: wishes }
-                        div(class="control") {
-                            button(class="button is-info") {
-                                span(class="icon is-small") {
-                                    i(class="fas fa-search") }
-                                span {"Search builds"} } } }
-                    Indexed {
-                        iterable: wishes,
-                        view: move |ctx, (skill, amount)| view! { ctx,
-                            div(class="field has-addons") {
-                                Button {
-                                    button_type: ButtonType::Remove,
-                                    on_click:remove_wish(skill),
-                                    is_disabled: ||false
-                                }
-                                WishRow { skill: skill, amount: amount } } } } }
-                div(class="column") {
-                        BuildList(all_armors)
-                } } } } }
-}
-
-#[component]
-fn BuildList<'a, G: Html>(ctx: ScopeRef<'a>, all_armors: &'a Signal<AllArmors>) -> View<G> {
-    view! {ctx,
-        (all_armors.get().helmets.len())
-    article(class="panel is-primary") {
-        p(class="panel-heading")
-        a(class="panel-block") {
-            "helmet"
-        }
-        a(class="panel-block") {
-            "chest"
-        }
-        a(class="panel-block") {
-            "arms"
-        }
-        a(class="panel-block") {
-            "waist"
-        }
-        a(class="panel-block") {
-            "legs"
-        }
-    }
-    article(class="panel is-primary") {
-        p(class="panel-heading")
-        a(class="panel-block") {
-            "helmet"
-        }
-        a(class="panel-block") {
-            "chest"
-        }
-        a(class="panel-block") {
-            "arms"
-        }
-        a(class="panel-block") {
-            "waist"
-        }
-        a(class="panel-block") {
-            "legs"
-        }
-    }
-    }
-}
-
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct DisplaySkill(Skill);
 
 impl Display for DisplaySkill {
@@ -153,174 +29,262 @@ impl Deref for DisplaySkill {
     }
 }
 
-#[derive(Prop)]
-struct AddWishProps<'a> {
-    available_skills: &'a Signal<Vec<DisplaySkill>>,
-    wishes: &'a Signal<Vec<(DisplaySkill, &'a Signal<u8>)>>,
+const BASE_URL: &str =
+    "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
+
+async fn fetch_armors(name: &str) -> Result<Vec<Armor>> {
+    from_str(
+        &Request::get(&format!("{BASE_URL}{name}.ron"))
+            .send()
+            .await?
+            .text()
+            .await?,
+    )
+    .map_err(|err| err.into())
 }
 
-#[component]
-fn AddWish<'a, G: Html>(
-    ctx: ScopeRef<'a>,
-    AddWishProps {
-        available_skills,
-        wishes,
-    }: AddWishProps<'a>,
-) -> View<G> {
-    let is_active = ctx.create_signal(false);
+struct AllArmors {
+    helmets: Vec<Armor>,
+    chests: Vec<Armor>,
+    arms: Vec<Armor>,
+    waists: Vec<Armor>,
+    legs: Vec<Armor>,
+}
 
-    let on_select = |skill| {
-        let mut tmp = wishes.get().to_vec();
-        tmp.push((skill, ctx.create_signal(1)));
-        wishes.set(tmp);
-        is_active.set(false);
+pub fn app(cx: Scope) -> Element {
+    let (wishes, set_wishes) = use_state(&cx, Vector::<(DisplaySkill, u8)>::default);
+    let all_skills: HashSet<DisplaySkill> = Skill::ALL.iter().copied().map(DisplaySkill).collect();
+    let available_skills: HashSet<DisplaySkill> =
+        all_skills.difference(wishes.iter().map(|(skill, _)| *skill).collect());
+    let (all_armors, set_all_armors) = use_state(&cx, || Option::<AllArmors>::None);
 
-        let mut tmp = available_skills.get().to_vec();
-        tmp.remove(tmp.iter().position(|s| *s == skill).unwrap());
-        available_skills.set(tmp);
+    let rows = wishes.iter().enumerate().map(|(index, (skill, amount))| {
+        rsx! {
+            div { class: "field has-addons",
+                WishRow {
+                    set_wishes: set_wishes,
+                    index: index,
+                    skill: *skill,
+                    amount: *amount
+                }
+            }
+        }
+    });
+
+    use_future(&cx, || {
+        let set = set_all_armors.to_owned();
+        async move {
+            set(Some(AllArmors {
+                helmets: fetch_armors("helmets").await.unwrap(),
+                chests: fetch_armors("chests").await.unwrap(),
+                arms: fetch_armors("arms").await.unwrap(),
+                waists: fetch_armors("waists").await.unwrap(),
+                legs: fetch_armors("legs").await.unwrap(),
+            }));
+        }
+    });
+
+    let class_search_button = if all_armors.is_some() {
+        "button is-info"
+    } else {
+        "button is-info is-loading"
     };
 
-    view! { ctx,
-    div(class="control") {
-        button(class="button is-primary",on:click=|_|is_active.set(true)) {
-            span(class="icon is-small") { i(class="fas fa-pepper-hot")}
-            span {"Add wish"}} }
-    Select {
-        options: available_skills,
-        on_select:on_select,
-        is_active:is_active
-    } }
+    let search_is_disabled = wishes.is_empty();
+
+    cx.render(rsx!(section { class: "section",
+        div { class: "container",
+            div { class: "columns",
+                div { class: "column",
+                    div { class: "field is-grouped",
+                        AddWish {
+                            options: available_skills,
+                            set_wishes: set_wishes
+                        }
+                        div { class: "control",
+                            button { class: "{class_search_button}", disabled: "{search_is_disabled}",
+                                span { class: "icon is-small",
+                                    i { class: "fa-solid fa-magnifying-glass" }
+                                }
+                                span { "Search builds" }
+                            }
+                        }
+                    }
+                    rows
+                }
+                div { class: "column",
+                    article { class: "panel is-primary",
+                        p { class: "panel-heading" }
+                        a { class: "panel-block",
+                            "helmet"
+                        }
+                        a { class: "panel-block",
+                            "chest"
+                        }
+                        a { class: "panel-block",
+                            "arms"
+                        }
+                        a { class: "panel-block",
+                            "waist"
+                        }
+                        a { class: "panel-block",
+                            "legs"
+                        }
+                    }
+                    article { class: "panel is-primary",
+                        p { class: "panel-heading" }
+                        a { class: "panel-block",
+                            "helmet"
+                        }
+                        a { class: "panel-block",
+                            "chest"
+                        }
+                        a { class: "panel-block",
+                            "arms"
+                        }
+                        a { class: "panel-block",
+                            "waist"
+                        }
+                        a { class: "panel-block",
+                            "legs"
+                        }
+                    }
+                }
+            }
+        }
+    }))
 }
 
-#[derive(Prop)]
-struct WishRowProps<'a> {
+#[inline_props]
+fn WishRow<'a>(
+    cx: Scope,
+    set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
+    index: usize,
     skill: DisplaySkill,
-    amount: &'a Signal<u8>,
+    amount: u8,
+) -> Element {
+    let (index, skill, amount) = (*index, *skill, *amount);
+
+    let is_minus_disabled = amount == 1;
+    let is_plus_disabled = amount == skill.get_limit();
+
+    let remove_skill = move |_| {
+        set_wishes.make_mut().remove(index);
+    };
+
+    let increment = move |_| set_wishes.make_mut()[index] = (skill, amount + 1);
+
+    let decrement = move |_| set_wishes.make_mut()[index] = (skill, amount - 1);
+
+    cx.render(rsx! {
+        div { class: "control",
+            button { class: "button is-danger", onclick: remove_skill,
+                span { class: "icon is-small",
+                    i { class: "fa-solid fa-trash" }
+                }
+            }
+        }
+        div { class: "control",
+            input { class: "input", size: "15", readonly: "true", value: "{skill}" }
+        },
+        div { class: "control",
+            button { class: "button is-link", disabled: "{is_minus_disabled}", onclick: decrement,
+                span { class: "icon is-small",
+                    i { class: "fa-solid fa-minus" }
+                }
+            }
+        }
+        div { class: "control",
+            input { class: "input", size: "1", readonly: "true", value: "{amount}" }
+        },
+        div { class: "control",
+            button { class: "button is-success", disabled: "{is_plus_disabled}", onclick: increment,
+                span { class: "icon is-small",
+                    i { class: "fa-solid fa-plus" }
+                }
+            }
+        }
+    })
 }
 
-#[component]
-fn WishRow<'a, G: Html>(
-    ctx: ScopeRef<'a>,
-    WishRowProps { skill, amount }: WishRowProps<'a>,
-) -> View<G> {
-    let decrement = move |_| amount.set(*amount.get() - 1);
-    let increment = move |_| amount.set(*amount.get() + 1);
-    let is_max = move || skill.get_limit() == *amount.get();
-    let is_min = || *amount.get() == 1;
+#[inline_props]
+fn AddWish<'a>(
+    cx: Scope,
+    options: HashSet<DisplaySkill>,
+    set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
+) -> Element {
+    let (is_active, set_is_active) = use_state(&cx, || false);
 
-    view! { ctx,
-    SkillText(skill)
-    Button {
-        button_type: ButtonType::Minus,
-        on_click: decrement,
-        is_disabled: is_min
-    }
-    AmountText(amount)
-    Button {
-        button_type: ButtonType::Plus,
-        on_click: increment,
-        is_disabled: is_max
-    } }
+    cx.render(rsx! {
+        div { class: "control",
+            button { class: "button is-primary", onclick: |_| set_is_active(true),
+                span { class: "icon is-small",
+                    i { class: "fa-solid fa-pepper-hot" }
+                },
+                span { "Add wish" }
+            }
+        }
+        SelectWish {
+            options: options,
+            set_wishes: set_wishes,
+            is_active: *is_active,
+            set_is_active: set_is_active
+        },
+    })
 }
 
-#[derive(Prop)]
-struct Select<'a, T, F> {
-    options: &'a Signal<Vec<T>>,
-    on_select: F,
-    is_active: &'a Signal<bool>,
-}
+#[inline_props]
+fn SelectWish<'a>(
+    cx: Scope,
+    options: &'a HashSet<DisplaySkill>,
+    set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
+    is_active: bool,
+    set_is_active: &'a UseState<bool>,
+) -> Element {
+    let class = if *is_active {
+        "modal is-active"
+    } else {
+        "modal"
+    };
 
-#[component]
-fn Select<'a, T: 'static + PartialEq + Clone + Display + Copy, G: Html>(
-    ctx: ScopeRef<'a>,
-    Select {
-        options,
-        on_select,
-        is_active,
-    }: Select<'a, T, impl Fn(T) + Copy + 'a>,
-) -> View<G> {
-    let class = || {
-        if *is_active.get() {
-            "modal is-active"
-        } else {
-            "modal"
+    let on_select = |skill| {
+        move |_| {
+            set_wishes.make_mut().push_back((skill, 1));
+            set_is_active(false)
         }
     };
 
-    // to tell the compiler what the lifetimes are
-    let indexed_props = IndexedProps::<'a> {
-        iterable: options,
-        view: move |ctx, option| {
-            view! { ctx,
-            div(class="panel-block",on:click=move |_|on_select(option)) { (option) } }
-        },
-    };
+    let options = options.iter().map(|&skill| {
+        rsx! {
+            div { class: "panel-block", onclick: on_select(skill),
+                "{skill}"
+            }
+        }
+    });
 
-    view! { ctx,
-    div(class=(class())) {
-        div(class="modal-background",on:click=|_|is_active.set(false))
-        div(class="modal-card") {
-            header(class="modal-card-head") {
-                div(class="modal-card-title mr-5") {
-                    p(class="control has-icons-left") {
-                        input(class="input is-fullwidth",type="text",placeholder="Search")
-                        span(class="icon is-left") {
-                            i(class="fas fa-search",aria-hidden=true) } } }
-                button(class="delete",aria-label="close",on:click=|_|is_active.set(false)) }
-            div(class="modal-card-body") {
-                Indexed(indexed_props) } } } }
-}
-
-#[component]
-fn SkillText<G: Html>(ctx: ScopeRef, skill: DisplaySkill) -> View<G> {
-    view! { ctx,
-    div(class="control") {
-        input(class="input", size=15, readonly=true, value=(skill)) } }
-}
-
-#[component]
-fn AmountText<'a, G: Html>(ctx: ScopeRef<'a>, amount: &'a Signal<u8>) -> View<G> {
-    view! { ctx,
-    div(class="control") {
-        input(class="input", size=1, readonly=true, value=(amount.get())) } }
-}
-
-enum ButtonType {
-    Remove,
-    Plus,
-    Minus,
-}
-
-#[derive(Prop)]
-struct ButtonProps<C, D> {
-    button_type: ButtonType,
-    on_click: C,
-    is_disabled: D,
-}
-
-#[component]
-fn Button<'a, G: Html>(
-    ctx: &'a Scope<'a>,
-    ButtonProps {
-        button_type,
-        on_click,
-        is_disabled,
-    }: ButtonProps<impl Fn(Event) + 'a, impl Fn() -> bool + 'a>,
-) -> View<G> {
-    let (button_class, icon_class) = match button_type {
-        ButtonType::Remove => ("button is-danger", "fas fa-trash"),
-        ButtonType::Plus => ("button is-success", "fas fa-plus"),
-        ButtonType::Minus => ("button is-link", "fas fa-minus"),
-    };
-
-    view! { ctx,
-    div(class="control") {
-        button(class=button_class,on:click=on_click,disabled=is_disabled()) {
-            span(class="icon is-small") { i(class=icon_class) } } } }
+    cx.render(rsx! {
+        div { class: "{class}",
+            div { class: "modal-background", onclick: |_| set_is_active(false) }
+            div { class: "modal-card",
+                header { class: "modal-card-head",
+                    div { class: "modal-card-title mr-5",
+                        p { class: "control has-icons-left",
+                            input { class: "input is-fullwidth", r#type: "text", placeholder: "Search" }
+                            span { class: "icon is-left",
+                                i { class: "fas fa-search" }
+                            }
+                        }
+                    },
+                    button { class: "delete", onclick: |_| set_is_active(false) }
+                }
+                div { class: "modal-card-body",
+                    options
+                }
+            }
+        }
+    })
 }
 
 fn main() {
-    sycamore::render(|ctx| {
-        view! { ctx, App {} }
-    });
+    dioxus::web::launch(app);
 }

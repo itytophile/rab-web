@@ -10,10 +10,9 @@ readme = "./README.md"
 edition = "2021"
 
 [dependencies]
-sycamore = { git = "https://github.com/sycamore-rs/sycamore", features = [
-    "suspense",
-] }
 rab-core = "0.3"
 reqwasm = "0.4"
 anyhow = "1"
 ron = "0.7"
+dioxus = { version = "0.1", features = ["web"] }
+im-rc = "15"
