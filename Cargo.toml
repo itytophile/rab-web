@@ -10,7 +10,7 @@ readme = "./README.md"
 edition = "2021"
 
 [dependencies]
-rab-core = "0.3"
+rab-core = "0.4"
 reqwasm = "0.4"
 anyhow = "1"
 ron = "0.7"
