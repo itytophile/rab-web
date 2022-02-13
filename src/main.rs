@@ -74,6 +74,7 @@ pub fn app(cx: Scope) -> Element {
         all_skills.difference(wishes.iter().map(|(skill, _)| *skill).collect());
     let (all_armors, set_all_armors) = use_state(&cx, || Option::<AllArmors>::None);
     let (builds, set_builds) = use_state(&cx, Vec::<Build>::new);
+    let (gender, set_gender) = use_state(&cx, Gender::default);
 
     let rows = wishes.iter().enumerate().map(|(index, (skill, amount))| {
         rsx! {
@@ -101,6 +102,20 @@ pub fn app(cx: Scope) -> Element {
         }
     });
 
+    let toggle_gender = move |_| {
+        if gender == &Gender::Female {
+            set_gender(Gender::Male);
+        } else {
+            set_gender(Gender::Female);
+        }
+    };
+
+    let icon_button = if gender == &Gender::Female {
+        "fa-solid fa-venus"
+    } else {
+        "fa-solid fa-mars"
+    };
+
     let class_search_button = if all_armors.is_some() {
         "button is-info"
     } else {
@@ -118,7 +133,7 @@ pub fn app(cx: Scope) -> Element {
                     .collect::<Vec<(Skill, u8)>>()
                     .as_slice(),
                 all_armors.as_slice(),
-                Gender::Female,
+                *gender,
                 [0, 0, 0],
             ));
         }
@@ -145,6 +160,13 @@ pub fn app(cx: Scope) -> Element {
                                     i { class: "fa-solid fa-magnifying-glass" }
                                 }
                                 span { "Search builds" }
+                            }
+                        }
+                        div { class: "control",
+                            button { class: "button", onclick: toggle_gender,
+                                span { class: "icon is-small",
+                                    i { class: "{icon_button}" }
+                                }
                             }
                         }
                     }
