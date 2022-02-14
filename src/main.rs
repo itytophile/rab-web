@@ -5,7 +5,7 @@ mod locale;
 use anyhow::Result;
 use dioxus::prelude::*;
 use im_rc::{HashSet, Vector};
-use locale::{en::English, fr::French, Locale};
+use locale::{Locale, Translation};
 use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
@@ -24,15 +24,6 @@ impl Deref for DisplaySkill {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-impl DisplaySkill {
-    fn translate(&self, locale: Locale) -> &'static str {
-        match locale {
-            Locale::English => self.to_english(),
-            Locale::French => self.to_french(),
-        }
     }
 }
 

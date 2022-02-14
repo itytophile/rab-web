@@ -1,7 +1,7 @@
-use self::{en::English, fr::French};
+mod en;
+mod fr;
 
-pub mod en;
-pub mod fr;
+use self::{en::English, fr::French};
 
 #[derive(Clone, Copy)]
 pub enum Locale {
@@ -14,11 +14,14 @@ pub enum UiSymbole {
     SearchBuilds,
 }
 
-impl UiSymbole {
-    pub fn translate(&self, locale: Locale) -> &'static str {
+pub trait Translation: English + French {
+    fn translate(&self, locale: Locale) -> &'static str {
         match locale {
             Locale::English => self.to_english(),
             Locale::French => self.to_french(),
         }
     }
 }
+
+impl Translation for crate::DisplaySkill {}
+impl Translation for crate::UiSymbole {}
