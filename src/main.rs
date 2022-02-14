@@ -75,6 +75,7 @@ pub fn app(cx: Scope) -> Element {
     let (all_armors, set_all_armors) = use_state(&cx, || Option::<AllArmors>::None);
     let (builds, set_builds) = use_state(&cx, Vec::<Build>::new);
     let (gender, set_gender) = use_state(&cx, Gender::default);
+    let (weapon_slots, set_weapon_slots) = use_state(&cx, || [0u8; 3]);
 
     let rows = wishes.iter().enumerate().map(|(index, (skill, amount))| {
         rsx! {
@@ -134,7 +135,7 @@ pub fn app(cx: Scope) -> Element {
                     .as_slice(),
                 all_armors.as_slice(),
                 *gender,
-                [0, 0, 0],
+                *weapon_slots,
             ));
         }
     };
@@ -143,6 +144,14 @@ pub fn app(cx: Scope) -> Element {
         rsx! {BuildView {
             b: build
         }}
+    });
+
+    let weapon_slot_buttons = weapon_slots.iter().enumerate().map(|(index, value)| {
+        rsx!(WeaponSlotButton {
+            set_weapon_slots: set_weapon_slots
+            value: *value
+            index: index
+        })
     });
 
     cx.render(rsx!(section { class: "section",
@@ -162,6 +171,8 @@ pub fn app(cx: Scope) -> Element {
                                 span { "Search builds" }
                             }
                         }
+                    }
+                    div { class: "field is-grouped",
                         div { class: "control",
                             button { class: "button", onclick: toggle_gender,
                                 span { class: "icon is-small",
@@ -169,6 +180,7 @@ pub fn app(cx: Scope) -> Element {
                                 }
                             }
                         }
+                        weapon_slot_buttons
                     }
                     rows
                 }
@@ -176,6 +188,26 @@ pub fn app(cx: Scope) -> Element {
                     build_views
                 }
             }
+        }
+    }))
+}
+
+#[inline_props]
+fn WeaponSlotButton<'a>(
+    cx: Scope,
+    set_weapon_slots: &'a UseState<[u8; 3]>,
+    value: u8,
+    index: usize,
+) -> Element {
+    let index = *index;
+
+    let increment = move |_| {
+        set_weapon_slots.make_mut()[index] = (value + 1) % 4;
+    };
+
+    cx.render(rsx!(div { class: "control",
+        button { class: "button", onclick: increment,
+        span {class:"icon is-small", "{value}"}
         }
     }))
 }
@@ -193,19 +225,40 @@ fn BuildView<'a>(cx: Scope, b: &'a Build) -> Element {
     cx.render(rsx!(article { class: "panel is-primary",
         p { class: "panel-heading" }
         a { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-hat-cowboy"}
+            }
             [armor_to_string(b.helmet.as_ref())]
         }
         a { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-shirt"}
+            }
             [armor_to_string(b.chest.as_ref())]
         }
         a { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-mitten"}
+            }
             [armor_to_string(b.arm.as_ref())]
         }
         a { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-archway"}
+            }
             [armor_to_string(b.waist.as_ref())]
         }
         a { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-socks"}
+            }
             [armor_to_string(b.leg.as_ref())]
+        }
+        a { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-lightbulb"}
+            }
+            [armor_to_string(b.talisman.as_ref())]
         }
     }))
 }
