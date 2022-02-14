@@ -1,34 +1,38 @@
 #![allow(non_snake_case)]
 
+mod locale;
+
 use anyhow::Result;
 use dioxus::prelude::*;
 use im_rc::{HashSet, Vector};
+use locale::{en::English, fr::French, Locale};
 use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
 };
 use reqwasm::http::Request;
 use ron::de::from_str;
-use std::{
-    fmt::{Display, Formatter},
-    ops::Deref,
-};
+use std::ops::Deref;
+
+use crate::locale::UiSymbole;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct DisplaySkill(Skill);
-
-impl Display for DisplaySkill {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let DisplaySkill(skill) = self;
-        f.write_fmt(format_args!("{skill:?}"))
-    }
-}
 
 impl Deref for DisplaySkill {
     type Target = Skill;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DisplaySkill {
+    fn translate(&self, locale: Locale) -> &'static str {
+        match locale {
+            Locale::English => self.to_english(),
+            Locale::French => self.to_french(),
+        }
     }
 }
 
@@ -68,6 +72,9 @@ impl AllArmors {
 }
 
 pub fn app(cx: Scope) -> Element {
+    use_context_provider(&cx, || Locale::French);
+    let locale = *use_context(&cx).unwrap().read();
+
     let (wishes, set_wishes) = use_state(&cx, Vector::<(DisplaySkill, u8)>::new);
     let all_skills: HashSet<DisplaySkill> = Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: HashSet<DisplaySkill> =
@@ -168,7 +175,7 @@ pub fn app(cx: Scope) -> Element {
                                 span { class: "icon is-small",
                                     i { class: "fa-solid fa-magnifying-glass" }
                                 }
-                                span { "Search builds" }
+                                span { [UiSymbole::SearchBuilds.translate(locale)] }
                             }
                         }
                     }
@@ -284,6 +291,8 @@ fn WishRow<'a>(
 
     let decrement = move |_| set_wishes.make_mut()[index] = (skill, amount - 1);
 
+    let skill = skill.translate(*use_context(&cx).unwrap().read());
+
     cx.render(rsx! {
         div { class: "control",
             button { class: "button is-danger", onclick: remove_skill,
@@ -322,6 +331,7 @@ fn AddWish<'a>(
     set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
 ) -> Element {
     let (is_active, set_is_active) = use_state(&cx, || false);
+    let locale = *use_context::<Locale>(&cx).unwrap().read();
 
     cx.render(rsx! {
         div { class: "control",
@@ -329,7 +339,7 @@ fn AddWish<'a>(
                 span { class: "icon is-small",
                     i { class: "fa-solid fa-pepper-hot" }
                 },
-                span { "Add wish" }
+                span { [UiSymbole::AddWish.translate(locale)] }
             }
         }
         SelectWish {
@@ -362,10 +372,12 @@ fn SelectWish<'a>(
         }
     };
 
+    let locale = *use_context(&cx).unwrap().read();
+
     let options = options.iter().map(|&skill| {
         rsx! {
             div { class: "panel-block", onclick: on_select(skill),
-                "{skill}"
+                [skill.translate(locale)]
             }
         }
     });
