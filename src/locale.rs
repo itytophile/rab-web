@@ -9,6 +9,17 @@ pub enum Locale {
     French,
 }
 
+impl Locale {
+    pub const ALL: [Locale; 2] = [Locale::English, Locale::French];
+
+    pub fn native(&self) -> &'static str {
+        match self {
+            Locale::English => "English",
+            Locale::French => "Français",
+        }
+    }
+}
+
 pub enum UiSymbole {
     AddWish,
     SearchBuilds,

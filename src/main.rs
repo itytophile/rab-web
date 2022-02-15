@@ -152,7 +152,9 @@ pub fn app(cx: Scope) -> Element {
         })
     });
 
-    cx.render(rsx!(section { class: "section",
+    cx.render(rsx!(
+    Navbar {}
+    section { class: "section",
         div { class: "container",
             div { class: "columns",
                 div { class: "column",
@@ -188,6 +190,50 @@ pub fn app(cx: Scope) -> Element {
             }
         }
     }))
+}
+
+fn Navbar(cx: Scope) -> Element {
+    let set_locale = use_context(&cx).unwrap();
+
+    let (is_active, set_is_active) = use_state(&cx, || false);
+
+    let class_dropdown = if *is_active {
+        "dropdown is-active"
+    } else {
+        "dropdown"
+    };
+
+    let locales = Locale::ALL.iter().map(|locale| {
+        cx.render(rsx!(a {
+            class:"dropdown-item",
+            onclick: move |_| {
+                *set_locale.write() = *locale;
+                set_is_active(false);
+            },
+            [locale.native()]
+        }))
+    });
+
+    cx.render(
+        rsx!(nav { class: "navbar", role: "navigation", aria_label: "main navigation",
+                div { class: "navbar-item",
+                    div { class: "{class_dropdown}",
+                        div { class: "dropdown-trigger",
+                            a { class: "button", onclick: |_| set_is_active(!*is_active),
+                                span { class: "icon is-small",
+                                    i { class: "fa-solid fa-globe" }
+                                }
+                            }
+                        }
+                        div { class: "dropdown-menu",
+                            div { class: "dropdown-content",
+                                locales
+                            }
+                        }
+                    }
+                }
+        }),
+    )
 }
 
 #[inline_props]
