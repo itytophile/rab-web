@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+mod armors;
 mod locale;
 
 use anyhow::Result;
