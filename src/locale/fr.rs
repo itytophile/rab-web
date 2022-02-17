@@ -457,7 +457,7 @@ impl French for crate::armors::Armor {
             AnjanathGreavesS => "Grèves Anjanath S",
             DamascusCoil => "Boucle Damascus",
             BarrothVambraces => "Avant-bras Barroth",
-            IbushiBreastplate => "Plastron Ibushi",
+            IbushisBreastplate => "Plastron Ibushi",
             BazelgeuseGreaves => "Grèves Bazelgeuse",
             ValstraxCoil => "Boucle Valstrax",
             AelucanthVertexS => "Vertex Aelucanth S",
@@ -808,6 +808,7 @@ impl French for crate::armors::Armor {
             RhenoplosGreaves => "Grèves Rhenoplos",
             IbushisPauldrons => "Spalière Ibushi",
             MediumsObiS => "Obi de voyante S",
+            BasariosCoilS => "Boucle Basarios S",
         }
     }
 }

@@ -540,7 +540,7 @@ impl English for crate::armors::Armor {
             ArzurosVambracesS => "Arzuros Vambraces S",
             SkaldaThoraxS => "Skalda Thorax S",
             RaknaMail => "Rakna Mail",
-            IbushiBreastplate => "Ibushi Breastplate",
+            IbushisBreastplate => "Ibushi's Breastplate",
             BnahabraCoilS => "Bnahabra Coil S",
             DStenchBowelsS => "D. Stench Bowels S",
             KadachiHelmS => "Kadachi Helm S",
@@ -808,6 +808,7 @@ impl English for crate::armors::Armor {
             BarrothGreavesS => "Barroth Greaves S",
             LagombiHelmS => "Lagombi Helm S",
             SkaldaCruraS => "Skalda Crura S",
+            BasariosCoilS => "Basarios Coil S",
         }
     }
 }
