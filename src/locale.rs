@@ -36,3 +36,4 @@ pub trait Translation: English + French {
 
 impl Translation for crate::DisplaySkill {}
 impl Translation for crate::UiSymbole {}
+impl Translation for crate::armors::Armor {}

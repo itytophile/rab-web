@@ -1,4 +1,4 @@
-enum Armor {
+pub enum Armor {
     SpioBrachiaS,
     IngotVambraces,
     BishatenGreaves,
