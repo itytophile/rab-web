@@ -129,6 +129,7 @@ impl English for super::UiSymbole {
         match self {
             AddWish => "Add wish",
             SearchBuilds => "Search builds",
+            Filter => "Filter",
         }
     }
 }

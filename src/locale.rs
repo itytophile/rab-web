@@ -23,6 +23,7 @@ impl Locale {
 pub enum UiSymbole {
     AddWish,
     SearchBuilds,
+    Filter,
 }
 
 pub trait Translation: English + French {

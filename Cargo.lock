@@ -120,6 +120,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "diacritics"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4f99b2193cd68ca1a439d48ef670a67270760211f5fc85eb74bf6aa2b810b74"
+
+[[package]]
 name = "dioxus"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -485,6 +491,7 @@ dependencies = [
 name = "rab-web"
 version = "0.1.0"
 dependencies = [
+ "diacritics",
  "dioxus",
  "im-rc",
  "lexical-sort",

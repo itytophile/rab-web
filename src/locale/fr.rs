@@ -129,6 +129,7 @@ impl French for super::UiSymbole {
         match self {
             AddWish => "Ajout souhait",
             SearchBuilds => "Recherche",
+            Filter => "Filtre",
         }
     }
 }

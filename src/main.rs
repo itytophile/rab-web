@@ -5,6 +5,7 @@ mod locale;
 
 use crate::locale::UiSymbole;
 use armors::{ARMS, CHESTS, HELMETS, LEGS, WAISTS};
+use diacritics::remove_diacritics;
 use dioxus::prelude::*;
 use im_rc::{HashSet, Vector};
 use lexical_sort::natural_lexical_cmp;
@@ -364,6 +365,9 @@ fn SelectWish<'a>(
     is_active: bool,
     set_is_active: &'a UseState<bool>,
 ) -> Element {
+    // always lowercase, without diacritics
+    let (filter, set_filter) = use_state(&cx, String::new);
+
     let class = if *is_active {
         "modal is-active"
     } else {
@@ -379,7 +383,11 @@ fn SelectWish<'a>(
 
     let locale = *use_context(&cx).unwrap().read();
 
-    let mut options: Vec<DisplaySkill> = options.iter().copied().collect();
+    let mut options: Vec<DisplaySkill> = options
+        .iter()
+        .copied()
+        .filter(|skill| remove_diacritics(&skill.translate(locale).to_lowercase()).contains(filter))
+        .collect();
     options.sort_unstable_by(|a, b| natural_lexical_cmp(a.translate(locale), b.translate(locale)));
 
     let options = options.iter().map(|&skill| {
@@ -390,6 +398,8 @@ fn SelectWish<'a>(
         }
     });
 
+    let placeholder = UiSymbole::Filter.translate(locale);
+
     cx.render(rsx! {
         div { class: "{class}",
             div { class: "modal-background", onclick: |_| set_is_active(false) }
@@ -397,7 +407,12 @@ fn SelectWish<'a>(
                 header { class: "modal-card-head",
                     div { class: "modal-card-title mr-5",
                         p { class: "control has-icons-left",
-                            input { class: "input is-fullwidth", r#type: "text", placeholder: "Search" }
+                            input {
+                                class: "input is-fullwidth",
+                                r#type: "text",
+                                placeholder: "{placeholder}",
+                                oninput: |event| set_filter(remove_diacritics(&event.value.to_lowercase()))
+                            }
                             span { class: "icon is-left",
                                 i { class: "fas fa-search" }
                             }
