@@ -3,7 +3,7 @@
 mod armors;
 mod locale;
 
-use anyhow::Result;
+use armors::{ARMS, CHESTS, HELMETS, LEGS, WAISTS};
 use dioxus::prelude::*;
 use im_rc::{HashSet, Vector};
 use locale::{Locale, Translation};
@@ -11,8 +11,6 @@ use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
 };
-use reqwasm::http::Request;
-use ron::de::from_str;
 use std::ops::Deref;
 
 use crate::locale::UiSymbole;
@@ -28,41 +26,6 @@ impl Deref for DisplaySkill {
     }
 }
 
-const BASE_URL: &str =
-    "https://raw.githubusercontent.com/itytophile/monster-hunter-rise-armors/main/";
-
-async fn fetch_armors(name: &str) -> Result<Vec<Armor>> {
-    from_str(
-        &Request::get(&format!("{BASE_URL}{name}.ron"))
-            .send()
-            .await?
-            .text()
-            .await?,
-    )
-    .map_err(|err| err.into())
-}
-
-struct AllArmors {
-    helmets: Vec<Armor>,
-    chests: Vec<Armor>,
-    arms: Vec<Armor>,
-    waists: Vec<Armor>,
-    legs: Vec<Armor>,
-}
-
-impl AllArmors {
-    fn as_slice(&self) -> AllArmorSlices {
-        AllArmorSlices {
-            arms: &self.arms,
-            chests: &self.chests,
-            helmets: &self.helmets,
-            legs: &self.legs,
-            talismans: &[],
-            waists: &self.waists,
-        }
-    }
-}
-
 pub fn app(cx: Scope) -> Element {
     use_context_provider(&cx, || Locale::French);
     let locale = *use_context(&cx).unwrap().read();
@@ -71,7 +34,6 @@ pub fn app(cx: Scope) -> Element {
     let all_skills: HashSet<DisplaySkill> = Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: HashSet<DisplaySkill> =
         all_skills.difference(wishes.iter().map(|(skill, _)| *skill).collect());
-    let (all_armors, set_all_armors) = use_state(&cx, || Option::<AllArmors>::None);
     let (builds, set_builds) = use_state(&cx, Vec::<Build>::new);
     let (gender, set_gender) = use_state(&cx, Gender::default);
     let (weapon_slots, set_weapon_slots) = use_state(&cx, || [0u8; 3]);
@@ -89,19 +51,6 @@ pub fn app(cx: Scope) -> Element {
         }
     });
 
-    use_future(&cx, || {
-        let set = set_all_armors.to_owned();
-        async move {
-            set(Some(AllArmors {
-                helmets: fetch_armors("helmets").await.unwrap(),
-                chests: fetch_armors("chests").await.unwrap(),
-                arms: fetch_armors("arms").await.unwrap(),
-                waists: fetch_armors("waists").await.unwrap(),
-                legs: fetch_armors("legs").await.unwrap(),
-            }));
-        }
-    });
-
     let toggle_gender = move |_| {
         if gender == &Gender::Female {
             set_gender(Gender::Male);
@@ -116,27 +65,41 @@ pub fn app(cx: Scope) -> Element {
         "fa-solid fa-mars"
     };
 
-    let class_search_button = if all_armors.is_some() {
-        "button is-info"
-    } else {
-        "button is-info is-loading"
-    };
-
     let search_is_disabled = wishes.is_empty();
 
     let search_builds = move |_| {
-        if let Some(all_armors) = all_armors {
-            set_builds(pre_selection_then_brute_force_search(
-                wishes
+        set_builds(pre_selection_then_brute_force_search(
+            wishes
+                .iter()
+                .map(|(skill, amount)| (skill.0, *amount))
+                .collect::<Vec<(Skill, u8)>>()
+                .as_slice(),
+            AllArmorSlices {
+                arms: &ARMS
                     .iter()
-                    .map(|(skill, amount)| (skill.0, *amount))
-                    .collect::<Vec<(Skill, u8)>>()
-                    .as_slice(),
-                all_armors.as_slice(),
-                *gender,
-                *weapon_slots,
-            ));
-        }
+                    .map(|armor| armor.into())
+                    .collect::<Vec<Armor>>(),
+                chests: &CHESTS
+                    .iter()
+                    .map(|armor| armor.into())
+                    .collect::<Vec<Armor>>(),
+                helmets: &HELMETS
+                    .iter()
+                    .map(|armor| armor.into())
+                    .collect::<Vec<Armor>>(),
+                legs: &LEGS
+                    .iter()
+                    .map(|armor| armor.into())
+                    .collect::<Vec<Armor>>(),
+                talismans: &[],
+                waists: &WAISTS
+                    .iter()
+                    .map(|armor| armor.into())
+                    .collect::<Vec<Armor>>(),
+            },
+            *gender,
+            *weapon_slots,
+        ));
     };
 
     let build_views = builds.iter().map(|build| {
@@ -165,7 +128,7 @@ pub fn app(cx: Scope) -> Element {
                             set_wishes: set_wishes
                         }
                         div { class: "control",
-                            button { class: "{class_search_button}", disabled: "{search_is_disabled}", onclick: search_builds,
+                            button { class: "button is-info", disabled: "{search_is_disabled}", onclick: search_builds,
                                 span { class: "icon is-small",
                                     i { class: "fa-solid fa-magnifying-glass" }
                                 }

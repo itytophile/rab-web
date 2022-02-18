@@ -11,8 +11,5 @@ edition = "2021"
 
 [dependencies]
 rab-core = "0.4"
-reqwasm = "0.4"
-anyhow = "1"
-ron = "0.7"
 dioxus = { version = "0.1", features = ["web"] }
 im-rc = "15"
