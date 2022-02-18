@@ -13,3 +13,5 @@ edition = "2021"
 rab-core = "0.4"
 dioxus = { version = "0.1", features = ["web"] }
 im-rc = "15"
+strum = "0.23"
+strum_macros = "0.23"

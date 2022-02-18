@@ -11,7 +11,7 @@ use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
 };
-use std::ops::Deref;
+use std::{ops::Deref, str::FromStr};
 
 use crate::locale::UiSymbole;
 
@@ -220,53 +220,57 @@ fn WeaponSlotButton<'a>(
     }))
 }
 
-fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>) -> String {
+fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) -> &str {
     if let Some((armor, _)) = armor {
-        armor.name.clone()
+        armors::Armor::from_str(&armor.name)
+            .unwrap()
+            .translate(locale)
     } else {
-        "Free".to_owned()
+        "Free"
     }
 }
 
 #[inline_props] // can't use build a parameter name
 fn BuildView<'a>(cx: Scope, b: &'a Build) -> Element {
+    let locale = *use_context::<Locale>(&cx).unwrap().read();
+
     cx.render(rsx!(article { class: "panel is-primary",
         p { class: "panel-heading" }
         a { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-hat-cowboy"}
             }
-            [armor_to_string(b.helmet.as_ref())]
+            [armor_to_string(b.helmet.as_ref(), locale)]
         }
         a { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-shirt"}
             }
-            [armor_to_string(b.chest.as_ref())]
+            [armor_to_string(b.chest.as_ref(), locale)]
         }
         a { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-mitten"}
             }
-            [armor_to_string(b.arm.as_ref())]
+            [armor_to_string(b.arm.as_ref(),locale)]
         }
         a { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-archway"}
             }
-            [armor_to_string(b.waist.as_ref())]
+            [armor_to_string(b.waist.as_ref(),locale)]
         }
         a { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-socks"}
             }
-            [armor_to_string(b.leg.as_ref())]
+            [armor_to_string(b.leg.as_ref(),locale)]
         }
         a { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-lightbulb"}
             }
-            [armor_to_string(b.talisman.as_ref())]
+            [armor_to_string(b.talisman.as_ref(),locale)]
         }
     }))
 }

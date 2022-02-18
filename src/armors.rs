@@ -38,12 +38,12 @@ impl From<&Armor> for rab_core::armor_and_skills::Armor {
             ice,
             dragon,
             gender,
-            name: format!("{:?}", armor),
+            name: armor.to_string(),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(strum_macros::Display, EnumString)]
 pub enum Armor {
     SpioBrachiaS,
     IngotVambraces,
@@ -7835,6 +7835,7 @@ impl Armor {
     }
 }
 
+use strum_macros::EnumString;
 use Armor::*;
 
 pub const ARMS: &[Armor] = &[
