@@ -3,17 +3,17 @@
 mod armors;
 mod locale;
 
+use crate::locale::UiSymbole;
 use armors::{ARMS, CHESTS, HELMETS, LEGS, WAISTS};
 use dioxus::prelude::*;
 use im_rc::{HashSet, Vector};
+use lexical_sort::natural_lexical_cmp;
 use locale::{Locale, Translation};
 use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
 };
 use std::{ops::Deref, str::FromStr};
-
-use crate::locale::UiSymbole;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct DisplaySkill(Skill);
@@ -379,9 +379,12 @@ fn SelectWish<'a>(
 
     let locale = *use_context(&cx).unwrap().read();
 
+    let mut options: Vec<DisplaySkill> = options.iter().copied().collect();
+    options.sort_unstable_by(|a, b| natural_lexical_cmp(a.translate(locale), b.translate(locale)));
+
     let options = options.iter().map(|&skill| {
         rsx! {
-            div { class: "panel-block", onclick: on_select(skill),
+            a { class: "panel-block", onclick: on_select(skill),
                 [skill.translate(locale)]
             }
         }
