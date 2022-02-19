@@ -9,7 +9,7 @@ use diacritics::remove_diacritics;
 use dioxus::prelude::*;
 use im_rc::{HashSet, Vector};
 use lexical_sort::natural_lexical_cmp;
-use locale::{Locale, Translation};
+use locale::{en::English, Locale, Translation};
 use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
@@ -365,7 +365,7 @@ fn SelectWish<'a>(
     is_active: bool,
     set_is_active: &'a UseState<bool>,
 ) -> Element {
-    // always lowercase, without diacritics
+    // always lowercase
     let (filter, set_filter) = use_state(&cx, String::new);
 
     let class = if *is_active {
@@ -383,17 +383,44 @@ fn SelectWish<'a>(
 
     let locale = *use_context(&cx).unwrap().read();
 
+    let filter_without_diacritics = remove_diacritics(filter);
+
     let mut options: Vec<DisplaySkill> = options
         .iter()
         .copied()
-        .filter(|skill| remove_diacritics(&skill.translate(locale).to_lowercase()).contains(filter))
+        .filter(|skill| {
+            remove_diacritics(&skill.translate(locale).to_lowercase())
+                .contains(&filter_without_diacritics)
+                || skill
+                    .to_english()
+                    .to_lowercase()
+                    .contains(&filter_without_diacritics)
+        })
         .collect();
+
     options.sort_unstable_by(|a, b| natural_lexical_cmp(a.translate(locale), b.translate(locale)));
 
     let options = options.iter().map(|&skill| {
+        let text = match locale {
+            Locale::English => cx.render(rsx! { [skill.to_english()] }),
+            _ => {
+                if !filter.is_empty() && skill.to_english().to_lowercase().contains(filter) {
+                    cx.render(rsx! {
+                        [skill.translate(locale)]
+                        span { class: "is-italic has-text-grey-light ml-1",
+                            [skill.to_english()]
+                        }
+                    })
+                } else {
+                    cx.render(rsx! {
+                        [skill.translate(locale)]
+                    })
+                }
+            }
+        };
         rsx! {
             a { class: "panel-block", onclick: on_select(skill),
-                [skill.translate(locale)]
+                text
             }
         }
     });
@@ -411,7 +438,7 @@ fn SelectWish<'a>(
                                 class: "input is-fullwidth",
                                 r#type: "text",
                                 placeholder: "{placeholder}",
-                                oninput: |event| set_filter(remove_diacritics(&event.value.to_lowercase()))
+                                oninput: |event| set_filter(event.value.to_lowercase())
                             }
                             span { class: "icon is-left",
                                 i { class: "fas fa-search" }

@@ -1,4 +1,4 @@
-mod en;
+pub mod en;
 mod fr;
 
 use self::{en::English, fr::French};
