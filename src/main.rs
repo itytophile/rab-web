@@ -96,12 +96,12 @@ fn Navbar<'a>(
     let route = **set_route.get();
 
     let class_talisman = match route {
-        Route::Talismans => "button is-primary",
+        Route::Talismans => "button is-static",
         _ => "button",
     };
 
     let class_home = match route {
-        Route::Home => "button is-primary",
+        Route::Home => "button is-static",
         _ => "button",
     };
 
