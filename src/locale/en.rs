@@ -130,6 +130,7 @@ impl English for super::UiSymbole {
             AddWish => "Add wish",
             SearchBuilds => "Search builds",
             Filter => "Filter",
+            MyTalismans => "My talismans",
         }
     }
 }

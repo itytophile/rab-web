@@ -24,6 +24,7 @@ pub enum UiSymbole {
     AddWish,
     SearchBuilds,
     Filter,
+    MyTalismans
 }
 
 pub trait Translation: English + French {

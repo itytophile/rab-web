@@ -130,6 +130,7 @@ impl French for super::UiSymbole {
             AddWish => "Ajout souhait",
             SearchBuilds => "Recherche",
             Filter => "Filtre",
+            MyTalismans => "Mes talismans",
         }
     }
 }

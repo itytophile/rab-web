@@ -184,9 +184,17 @@ fn Navbar(cx: Scope) -> Element {
                 div { class: "navbar-item",
                     div { class: "{class_dropdown}",
                         div { class: "dropdown-trigger",
-                            a { class: "button", onclick: |_| set_is_active(!*is_active),
-                                span { class: "icon is-small",
-                                    i { class: "fa-solid fa-globe" }
+                            div { class:"buttons",
+                                a { class: "button", onclick: |_| set_is_active(!*is_active),
+                                    span { class: "icon is-small",
+                                        i { class: "fa-solid fa-globe" }
+                                    }
+                                }
+                                a { class: "button", onclick: |_| set_is_active(!*is_active),
+                                    span { class: "icon is-small",
+                                        i { class: "fa-solid fa-lightbulb" }
+                                    }
+                                    span { [UiSymbole::MyTalismans.translate(*set_locale.read())] }
                                 }
                             }
                         }
