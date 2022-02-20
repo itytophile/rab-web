@@ -131,6 +131,7 @@ impl English for super::UiSymbole {
             SearchBuilds => "Search builds",
             Filter => "Filter",
             MyTalismans => "My talismans",
+            Home => "Home",
         }
     }
 }

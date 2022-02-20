@@ -27,10 +27,39 @@ impl Deref for DisplaySkill {
     }
 }
 
-pub fn app(cx: Scope) -> Element {
-    use_context_provider(&cx, || Locale::French);
-    let locale = *use_context(&cx).unwrap().read();
+#[derive(Clone, Copy)]
+enum Route {
+    Home,
+    Talismans,
+}
 
+fn app(cx: Scope) -> Element {
+    let (locale, set_locale) = use_state(&cx, || Locale::French);
+    let (route, set_route) = use_state(&cx, || Route::Home);
+
+    let routes = match route {
+        Route::Home => cx.render(rsx!(Home { locale: *locale })),
+        Route::Talismans => cx.render(rsx!(Talismans {})),
+    };
+
+    cx.render(rsx!(
+    Navbar {
+        set_locale: set_locale,
+        set_route: set_route
+    }
+    section { class: "section",
+        div { class: "container",
+            routes
+        }
+    }))
+}
+
+fn Talismans(cx: Scope) -> Element {
+    cx.render(rsx!("lol"))
+}
+
+#[inline_props]
+fn Home(cx: Scope, locale: Locale) -> Element {
     let (wishes, set_wishes) = use_state(&cx, Vector::<(DisplaySkill, u8)>::new);
     let all_skills: HashSet<DisplaySkill> = Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: HashSet<DisplaySkill> =
@@ -46,7 +75,8 @@ pub fn app(cx: Scope) -> Element {
                     set_wishes: set_wishes,
                     index: index,
                     skill: *skill,
-                    amount: *amount
+                    amount: *amount,
+                    locale: *locale
                 }
             }
         }
@@ -105,7 +135,8 @@ pub fn app(cx: Scope) -> Element {
 
     let build_views = builds.iter().map(|build| {
         rsx! {BuildView {
-            b: build
+            b: build,
+            locale: *locale
         }}
     });
 
@@ -118,48 +149,48 @@ pub fn app(cx: Scope) -> Element {
     });
 
     cx.render(rsx!(
-    Navbar {}
-    section { class: "section",
-        div { class: "container",
-            div { class: "columns",
-                div { class: "column",
-                    div { class: "field is-grouped",
-                        AddWish {
-                            options: available_skills,
-                            set_wishes: set_wishes
+        div { class: "columns",
+            div { class: "column",
+                div { class: "field is-grouped",
+                    AddWish {
+                        options: available_skills,
+                        set_wishes: set_wishes,
+                        locale: *locale
+                    }
+                    div { class: "control",
+                        button { class: "button is-info", disabled: "{search_is_disabled}", onclick: search_builds,
+                            span { class: "icon is-small",
+                                i { class: "fa-solid fa-magnifying-glass" }
+                            }
+                            span { [UiSymbole::SearchBuilds.translate(*locale)] }
                         }
-                        div { class: "control",
-                            button { class: "button is-info", disabled: "{search_is_disabled}", onclick: search_builds,
-                                span { class: "icon is-small",
-                                    i { class: "fa-solid fa-magnifying-glass" }
-                                }
-                                span { [UiSymbole::SearchBuilds.translate(locale)] }
+                    }
+                }
+                div { class: "field is-grouped",
+                    div { class: "control",
+                        button { class: "button", onclick: toggle_gender,
+                            span { class: "icon is-small",
+                                i { class: "{icon_button}" }
                             }
                         }
                     }
-                    div { class: "field is-grouped",
-                        div { class: "control",
-                            button { class: "button", onclick: toggle_gender,
-                                span { class: "icon is-small",
-                                    i { class: "{icon_button}" }
-                                }
-                            }
-                        }
-                        weapon_slot_buttons
-                    }
-                    rows
+                    weapon_slot_buttons
                 }
-                div { class: "column",
-                    build_views
-                }
+                rows
+            }
+            div { class: "column",
+                build_views
             }
         }
-    }))
+    ))
 }
 
-fn Navbar(cx: Scope) -> Element {
-    let set_locale = use_context(&cx).unwrap();
-
+#[inline_props]
+fn Navbar<'a>(
+    cx: Scope,
+    set_locale: &'a UseState<Locale>,
+    set_route: &'a UseState<Route>,
+) -> Element {
     let (is_active, set_is_active) = use_state(&cx, || false);
 
     let class_dropdown = if *is_active {
@@ -168,16 +199,18 @@ fn Navbar(cx: Scope) -> Element {
         "dropdown"
     };
 
-    let locales = Locale::ALL.iter().map(|locale| {
+    let locales = Locale::ALL.iter().map(|&locale| {
         cx.render(rsx!(a {
             class:"dropdown-item",
             onclick: move |_| {
-                *set_locale.write() = *locale;
+                set_locale(locale);
                 set_is_active(false);
             },
             [locale.native()]
         }))
     });
+
+    let locale = **set_locale.get();
 
     cx.render(
         rsx!(nav { class: "navbar", role: "navigation", aria_label: "main navigation",
@@ -190,11 +223,17 @@ fn Navbar(cx: Scope) -> Element {
                                         i { class: "fa-solid fa-globe" }
                                     }
                                 }
-                                a { class: "button", onclick: |_| set_is_active(!*is_active),
+                                a { class: "button", onclick: move |_| set_route(Route::Home),
+                                    span { class: "icon is-small",
+                                        i { class: "fa-solid fa-house" }
+                                    }
+                                    span { [UiSymbole::Home.translate(locale)] }
+                                }
+                                a { class: "button", onclick: move |_| set_route(Route::Talismans),
                                     span { class: "icon is-small",
                                         i { class: "fa-solid fa-lightbulb" }
                                     }
-                                    span { [UiSymbole::MyTalismans.translate(*set_locale.read())] }
+                                    span { [UiSymbole::MyTalismans.translate(locale)] }
                                 }
                             }
                         }
@@ -240,8 +279,8 @@ fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) 
 }
 
 #[inline_props] // can't use build a parameter name
-fn BuildView<'a>(cx: Scope, b: &'a Build) -> Element {
-    let locale = *use_context::<Locale>(&cx).unwrap().read();
+fn BuildView<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
+    let locale = *locale;
 
     cx.render(rsx!(article { class: "panel is-primary",
         p { class: "panel-heading" }
@@ -291,6 +330,7 @@ fn WishRow<'a>(
     index: usize,
     skill: DisplaySkill,
     amount: u8,
+    locale: Locale,
 ) -> Element {
     let (index, skill, amount) = (*index, *skill, *amount);
 
@@ -305,7 +345,7 @@ fn WishRow<'a>(
 
     let decrement = move |_| set_wishes.make_mut()[index] = (skill, amount - 1);
 
-    let skill = skill.translate(*use_context(&cx).unwrap().read());
+    let skill = skill.translate(*locale);
 
     cx.render(rsx! {
         div { class: "control",
@@ -343,9 +383,9 @@ fn AddWish<'a>(
     cx: Scope,
     options: HashSet<DisplaySkill>,
     set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
+    locale: Locale,
 ) -> Element {
     let (is_active, set_is_active) = use_state(&cx, || false);
-    let locale = *use_context::<Locale>(&cx).unwrap().read();
 
     cx.render(rsx! {
         div { class: "control",
@@ -353,14 +393,15 @@ fn AddWish<'a>(
                 span { class: "icon is-small",
                     i { class: "fa-solid fa-pepper-hot" }
                 },
-                span { [UiSymbole::AddWish.translate(locale)] }
+                span { [UiSymbole::AddWish.translate(*locale)] }
             }
         }
         SelectWish {
             options: options,
             set_wishes: set_wishes,
             is_active: *is_active,
-            set_is_active: set_is_active
+            set_is_active: set_is_active,
+            locale: *locale
         },
     })
 }
@@ -372,6 +413,7 @@ fn SelectWish<'a>(
     set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
     is_active: bool,
     set_is_active: &'a UseState<bool>,
+    locale: Locale,
 ) -> Element {
     // always lowercase
     let (filter, set_filter) = use_state(&cx, String::new);
@@ -389,9 +431,9 @@ fn SelectWish<'a>(
         }
     };
 
-    let locale = *use_context(&cx).unwrap().read();
-
     let filter_without_diacritics = remove_diacritics(filter);
+
+    let locale = *locale;
 
     let mut options: Vec<DisplaySkill> = options
         .iter()

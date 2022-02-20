@@ -131,6 +131,7 @@ impl French for super::UiSymbole {
             SearchBuilds => "Recherche",
             Filter => "Filtre",
             MyTalismans => "Mes talismans",
+            Home => "Accueil",
         }
     }
 }

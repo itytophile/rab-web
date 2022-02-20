@@ -3,7 +3,7 @@ mod fr;
 
 use self::{en::English, fr::French};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Locale {
     English,
     French,
@@ -24,7 +24,8 @@ pub enum UiSymbole {
     AddWish,
     SearchBuilds,
     Filter,
-    MyTalismans
+    MyTalismans,
+    Home,
 }
 
 pub trait Translation: English + French {
