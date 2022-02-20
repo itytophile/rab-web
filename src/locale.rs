@@ -27,6 +27,7 @@ pub enum UiSymbole {
     MyTalismans,
     Home,
     TalismansName,
+    NoSlots,
 }
 
 pub trait Translation: English + French {

@@ -1,7 +1,7 @@
 use crate::{
     components::{AddSkill, SkillRow, SlotButton},
     locale::{Locale, Translation, UiSymbole},
-    DisplaySkill,
+    DisplaySkill, Talisman,
 };
 use dioxus::prelude::*;
 use rab_core::armor_and_skills::Skill;
@@ -11,8 +11,11 @@ pub(crate) fn Talismans<'a>(
     cx: Scope,
     set_skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     locale: Locale,
+    set_talismans: &'a UseState<im_rc::Vector<Talisman>>,
 ) -> Element {
     let skills = set_skills.get().as_ref();
+    let talismans = set_talismans.get().as_ref();
+
     let locale = *locale;
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
@@ -29,7 +32,7 @@ pub(crate) fn Talismans<'a>(
         })
     });
 
-    let save_disabled = skills.is_empty();
+    let save_disabled = skills.is_empty() || talisman_name.is_empty();
 
     let rows = skills.iter().enumerate().map(|(index, (skill, amount))| {
         rsx! {
@@ -46,6 +49,31 @@ pub(crate) fn Talismans<'a>(
     });
 
     let placeholder = UiSymbole::TalismansName.translate(locale);
+
+    let save_talisman = |_| {
+        set_talismans.make_mut().push_back(Talisman {
+            name: talisman_name.clone(),
+            skills: skills
+                .iter()
+                .map(|&(skill, amount)| (*skill, amount))
+                .collect(),
+            slots: talisman_slots
+                .iter()
+                .copied()
+                .filter(|slot| *slot != 0)
+                .collect(),
+        });
+        set_talisman_name(String::new());
+        set_skills(im_rc::Vector::new());
+        set_talisman_slots(Default::default())
+    };
+
+    let talisman_views = talismans.iter().map(|talisman| {
+        rsx!(TalismanView {
+            talisman: talisman,
+            locale: locale
+        })
+    });
 
     cx.render(rsx!(
         div { class: "columns",
@@ -66,7 +94,10 @@ pub(crate) fn Talismans<'a>(
                             }
                         }
                         div { class: "control",
-                            button { class: "button is-info", disabled: "{save_disabled}",
+                            button {
+                                class: "button is-info",
+                                disabled: "{save_disabled}",
+                                onclick: save_talisman,
                                 span { class: "icon is-small",
                                     i { class: "fa-solid fa-check" }
                                 }
@@ -87,21 +118,47 @@ pub(crate) fn Talismans<'a>(
                 rows
             }
             div { class: "column",
-                TalismanView {}
+                talisman_views
             }
         }
     ))
 }
 
 #[inline_props] // can't use build a parameter name
-fn TalismanView(cx: Scope) -> Element {
+fn TalismanView<'a>(cx: Scope, talisman: &'a Talisman, locale: Locale) -> Element {
+    let locale = *locale;
+
+    let slots = if talisman.slots.is_empty() {
+        UiSymbole::NoSlots.translate(locale).to_owned()
+    } else {
+        talisman
+            .slots
+            .iter()
+            .map(|slot| format!("x{slot} "))
+            .collect()
+    };
+
+    let skills = talisman.skills.iter().map(|(skill, amount)| {
+        let amount = format!(" x{amount}");
+        rsx!(span { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-pepper-hot"}
+            }
+            [DisplaySkill(*skill).translate(locale)]
+            "{amount}"
+        })
+    });
+
     cx.render(rsx!(article { class: "panel is-primary",
-        p { class: "panel-heading" }
+        p { class: "panel-heading",
+            [talisman.name.as_str()]
+        }
         span { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-gem"}
             }
-            "lol"
+            "{slots}"
         }
+        skills
     }))
 }

@@ -133,6 +133,7 @@ impl English for super::UiSymbole {
             MyTalismans => "My talismans",
             Home => "Home",
             TalismansName => "Talisman's name",
+            NoSlots => "No slots",
         }
     }
 }

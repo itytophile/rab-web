@@ -13,6 +13,13 @@ use std::ops::Deref;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct DisplaySkill(Skill);
 
+#[derive(Clone)]
+struct Talisman {
+    name: String,
+    skills: im_rc::Vector<(Skill, u8)>,
+    slots: im_rc::Vector<u8>,
+}
+
 impl Deref for DisplaySkill {
     type Target = Skill;
 
@@ -32,18 +39,20 @@ fn app(cx: Scope) -> Element {
     let (route, set_route) = use_state(&cx, || Route::Home);
     let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
+    let (_, set_talismans) = use_state(&cx, im_rc::Vector::<Talisman>::new);
 
     let locale = *locale;
 
     let routes = match route {
-        Route::Home => cx.render(rsx!(Home {
+        Route::Home => rsx!(Home {
             locale: locale,
             set_wishes: set_wishes
-        })),
-        Route::Talismans => cx.render(rsx!(Talismans {
+        }),
+        Route::Talismans => rsx!(Talismans {
             locale: locale,
-            set_skills: set_skills
-        })),
+            set_skills: set_skills,
+            set_talismans: set_talismans
+        }),
     };
 
     cx.render(rsx!(

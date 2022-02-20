@@ -133,6 +133,7 @@ impl French for super::UiSymbole {
             MyTalismans => "Mes talismans",
             Home => "Accueil",
             TalismansName => "Nom du talisman",
+            NoSlots => "Sans emplacements",
         }
     }
 }
