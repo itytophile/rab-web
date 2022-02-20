@@ -174,7 +174,16 @@ fn Home(cx: Scope, locale: Locale) -> Element {
                             }
                         }
                     }
-                    weapon_slot_buttons
+                    div { class: "field has-addons",
+                        div { class: "control",
+                            button { class: "button is-static", onclick: toggle_gender,
+                                span { class: "icon is-small",
+                                    i { class: "fa-solid fa-hammer" }
+                                }
+                            }
+                        }
+                        weapon_slot_buttons
+                    }
                 }
                 rows
             }
