@@ -4,10 +4,9 @@ mod armors;
 mod components;
 mod locale;
 
-use crate::locale::UiSymbole;
-use components::Home;
+use components::{Home, Talismans};
 use dioxus::prelude::*;
-use locale::{Locale, Translation};
+use locale::{Locale, Translation, UiSymbole};
 use rab_core::armor_and_skills::Skill;
 use std::ops::Deref;
 
@@ -32,9 +31,11 @@ fn app(cx: Scope) -> Element {
     let (locale, set_locale) = use_state(&cx, || Locale::French);
     let (route, set_route) = use_state(&cx, || Route::Home);
 
+    let locale = *locale;
+
     let routes = match route {
-        Route::Home => cx.render(rsx!(Home { locale: *locale })),
-        Route::Talismans => cx.render(rsx!(Talismans {})),
+        Route::Home => cx.render(rsx!(Home { locale: locale })),
+        Route::Talismans => cx.render(rsx!(Talismans { locale: locale })),
     };
 
     cx.render(rsx!(
@@ -47,10 +48,6 @@ fn app(cx: Scope) -> Element {
             routes
         }
     }))
-}
-
-fn Talismans(cx: Scope) -> Element {
-    cx.render(rsx!("lol"))
 }
 
 #[inline_props]
@@ -79,6 +76,17 @@ fn Navbar<'a>(
     });
 
     let locale = **set_locale.get();
+    let route = **set_route.get();
+
+    let class_talisman = match route {
+        Route::Talismans => "button is-primary",
+        _ => "button",
+    };
+
+    let class_home = match route {
+        Route::Home => "button is-primary",
+        _ => "button",
+    };
 
     cx.render(
         rsx!(nav { class: "navbar", role: "navigation", aria_label: "main navigation",
@@ -91,13 +99,13 @@ fn Navbar<'a>(
                                         i { class: "fa-solid fa-globe" }
                                     }
                                 }
-                                a { class: "button", onclick: move |_| set_route(Route::Home),
+                                a { class: "{class_home}", onclick: move |_| set_route(Route::Home),
                                     span { class: "icon is-small",
                                         i { class: "fa-solid fa-house" }
                                     }
                                     span { [UiSymbole::Home.translate(locale)] }
                                 }
-                                a { class: "button", onclick: move |_| set_route(Route::Talismans),
+                                a { class: "{class_talisman}", onclick: move |_| set_route(Route::Talismans),
                                     span { class: "icon is-small",
                                         i { class: "fa-solid fa-lightbulb" }
                                     }

@@ -127,11 +127,12 @@ impl English for super::UiSymbole {
         use super::UiSymbole::*;
 
         match self {
-            AddWish => "Add wish",
+            AddSkill => "Add skill",
             SearchBuilds => "Search builds",
             Filter => "Filter",
             MyTalismans => "My talismans",
             Home => "Home",
+            Save => "Save",
         }
     }
 }

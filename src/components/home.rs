@@ -1,12 +1,10 @@
-use crate::armors::{self, ARMS, CHESTS, HELMETS, LEGS, WAISTS};
 use crate::{
-    locale::{en::English, Locale, Translation, UiSymbole},
+    armors::{self, ARMS, CHESTS, HELMETS, LEGS, WAISTS},
+    components::{AddSkill, SkillRow, SlotButton},
+    locale::{Locale, Translation, UiSymbole},
     DisplaySkill,
 };
-use diacritics::remove_diacritics;
 use dioxus::prelude::*;
-use im_rc::{HashSet, Vector};
-use lexical_sort::natural_lexical_cmp;
 use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
@@ -15,9 +13,10 @@ use std::str::FromStr;
 
 #[inline_props]
 pub fn Home(cx: Scope, locale: Locale) -> Element {
-    let (wishes, set_wishes) = use_state(&cx, Vector::<(DisplaySkill, u8)>::new);
-    let all_skills: HashSet<DisplaySkill> = Skill::ALL.iter().copied().map(DisplaySkill).collect();
-    let available_skills: HashSet<DisplaySkill> =
+    let (wishes, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
+    let all_skills: im_rc::HashSet<DisplaySkill> =
+        Skill::ALL.iter().copied().map(DisplaySkill).collect();
+    let available_skills: im_rc::HashSet<DisplaySkill> =
         all_skills.difference(wishes.iter().map(|(skill, _)| *skill).collect());
     let (builds, set_builds) = use_state(&cx, Vec::<Build>::new);
     let (gender, set_gender) = use_state(&cx, Gender::default);
@@ -26,8 +25,8 @@ pub fn Home(cx: Scope, locale: Locale) -> Element {
     let rows = wishes.iter().enumerate().map(|(index, (skill, amount))| {
         rsx! {
             div { class: "field has-addons",
-                WishRow {
-                    set_wishes: set_wishes,
+                SkillRow {
+                    set_skills: set_wishes,
                     index: index,
                     skill: *skill,
                     amount: *amount,
@@ -96,8 +95,8 @@ pub fn Home(cx: Scope, locale: Locale) -> Element {
     });
 
     let weapon_slot_buttons = weapon_slots.iter().enumerate().map(|(index, value)| {
-        rsx!(WeaponSlotButton {
-            set_weapon_slots: set_weapon_slots
+        rsx!(SlotButton {
+            set_slots: set_weapon_slots
             value: *value
             index: index
         })
@@ -107,9 +106,9 @@ pub fn Home(cx: Scope, locale: Locale) -> Element {
         div { class: "columns",
             div { class: "column",
                 div { class: "field is-grouped",
-                    AddWish {
+                    AddSkill {
                         options: available_skills,
-                        set_wishes: set_wishes,
+                        set_skills: set_wishes,
                         locale: *locale
                     }
                     div { class: "control",
@@ -147,26 +146,6 @@ pub fn Home(cx: Scope, locale: Locale) -> Element {
             }
         }
     ))
-}
-
-#[inline_props]
-fn WeaponSlotButton<'a>(
-    cx: Scope,
-    set_weapon_slots: &'a UseState<[u8; 3]>,
-    value: u8,
-    index: usize,
-) -> Element {
-    let index = *index;
-
-    let increment = move |_| {
-        set_weapon_slots.make_mut()[index] = (value + 1) % 4;
-    };
-
-    cx.render(rsx!(div { class: "control",
-        button { class: "button", onclick: increment,
-        span {class:"icon is-small", "{value}"}
-        }
-    }))
 }
 
 fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) -> &str {
@@ -222,186 +201,4 @@ fn BuildView<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
             [armor_to_string(b.talisman.as_ref(),locale)]
         }
     }))
-}
-
-#[inline_props]
-fn WishRow<'a>(
-    cx: Scope,
-    set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
-    index: usize,
-    skill: DisplaySkill,
-    amount: u8,
-    locale: Locale,
-) -> Element {
-    let (index, skill, amount) = (*index, *skill, *amount);
-
-    let is_minus_disabled = amount == 1;
-    let is_plus_disabled = amount == skill.get_limit();
-
-    let remove_skill = move |_| {
-        set_wishes.make_mut().remove(index);
-    };
-
-    let increment = move |_| set_wishes.make_mut()[index] = (skill, amount + 1);
-
-    let decrement = move |_| set_wishes.make_mut()[index] = (skill, amount - 1);
-
-    let skill = skill.translate(*locale);
-
-    cx.render(rsx! {
-        div { class: "control",
-            button { class: "button is-danger", onclick: remove_skill,
-                span { class: "icon is-small",
-                    i { class: "fa-solid fa-trash" }
-                }
-            }
-        }
-        div { class: "control",
-            input { class: "input", size: "15", readonly: "true", value: "{skill}" }
-        },
-        div { class: "control",
-            button { class: "button is-link", disabled: "{is_minus_disabled}", onclick: decrement,
-                span { class: "icon is-small",
-                    i { class: "fa-solid fa-minus" }
-                }
-            }
-        }
-        div { class: "control",
-            input { class: "input", size: "1", readonly: "true", value: "{amount}" }
-        },
-        div { class: "control",
-            button { class: "button is-success", disabled: "{is_plus_disabled}", onclick: increment,
-                span { class: "icon is-small",
-                    i { class: "fa-solid fa-plus" }
-                }
-            }
-        }
-    })
-}
-
-#[inline_props]
-fn AddWish<'a>(
-    cx: Scope,
-    options: HashSet<DisplaySkill>,
-    set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
-    locale: Locale,
-) -> Element {
-    let (is_active, set_is_active) = use_state(&cx, || false);
-
-    cx.render(rsx! {
-        div { class: "control",
-            button { class: "button is-primary", onclick: |_| set_is_active(true),
-                span { class: "icon is-small",
-                    i { class: "fa-solid fa-pepper-hot" }
-                },
-                span { [UiSymbole::AddWish.translate(*locale)] }
-            }
-        }
-        SelectWish {
-            options: options,
-            set_wishes: set_wishes,
-            is_active: *is_active,
-            set_is_active: set_is_active,
-            locale: *locale
-        },
-    })
-}
-
-#[inline_props]
-fn SelectWish<'a>(
-    cx: Scope,
-    options: &'a HashSet<DisplaySkill>,
-    set_wishes: &'a UseState<Vector<(DisplaySkill, u8)>>,
-    is_active: bool,
-    set_is_active: &'a UseState<bool>,
-    locale: Locale,
-) -> Element {
-    // always lowercase
-    let (filter, set_filter) = use_state(&cx, String::new);
-
-    let class = if *is_active {
-        "modal is-active"
-    } else {
-        "modal"
-    };
-
-    let on_select = |skill| {
-        move |_| {
-            set_wishes.make_mut().push_back((skill, 1));
-            set_is_active(false)
-        }
-    };
-
-    let filter_without_diacritics = remove_diacritics(filter);
-
-    let locale = *locale;
-
-    let mut options: Vec<DisplaySkill> = options
-        .iter()
-        .copied()
-        .filter(|skill| {
-            remove_diacritics(&skill.translate(locale).to_lowercase())
-                .contains(&filter_without_diacritics)
-                || skill
-                    .to_english()
-                    .to_lowercase()
-                    .contains(&filter_without_diacritics)
-        })
-        .collect();
-
-    options.sort_unstable_by(|a, b| natural_lexical_cmp(a.translate(locale), b.translate(locale)));
-
-    let options = options.iter().map(|&skill| {
-        let text = match locale {
-            Locale::English => cx.render(rsx! { [skill.to_english()] }),
-            _ => {
-                if !filter.is_empty() && skill.to_english().to_lowercase().contains(filter) {
-                    cx.render(rsx! {
-                        [skill.translate(locale)]
-                        span { class: "is-italic has-text-grey-light ml-1",
-                            [skill.to_english()]
-                        }
-                    })
-                } else {
-                    cx.render(rsx! {
-                        [skill.translate(locale)]
-                    })
-                }
-            }
-        };
-        rsx! {
-            a { class: "panel-block", onclick: on_select(skill),
-                text
-            }
-        }
-    });
-
-    let placeholder = UiSymbole::Filter.translate(locale);
-
-    cx.render(rsx! {
-        div { class: "{class}",
-            div { class: "modal-background", onclick: |_| set_is_active(false) }
-            div { class: "modal-card",
-                header { class: "modal-card-head",
-                    div { class: "modal-card-title mr-5",
-                        p { class: "control has-icons-left",
-                            input {
-                                class: "input is-fullwidth",
-                                r#type: "text",
-                                placeholder: "{placeholder}",
-                                oninput: |event| set_filter(event.value.to_lowercase())
-                            }
-                            span { class: "icon is-left",
-                                i { class: "fas fa-search" }
-                            }
-                        }
-                    },
-                    button { class: "delete", onclick: |_| set_is_active(false) }
-                }
-                div { class: "modal-card-body",
-                    options
-                }
-            }
-        }
-    })
 }

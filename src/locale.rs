@@ -21,11 +21,12 @@ impl Locale {
 }
 
 pub enum UiSymbole {
-    AddWish,
+    AddSkill,
     SearchBuilds,
     Filter,
     MyTalismans,
     Home,
+    Save,
 }
 
 pub trait Translation: English + French {

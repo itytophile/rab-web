@@ -127,11 +127,12 @@ impl French for super::UiSymbole {
         use super::UiSymbole::*;
 
         match self {
-            AddWish => "Ajout souhait",
+            AddSkill => "Ajout talent",
             SearchBuilds => "Recherche",
             Filter => "Filtre",
             MyTalismans => "Mes talismans",
             Home => "Accueil",
+            Save => "Sauvegarder",
         }
     }
 }
