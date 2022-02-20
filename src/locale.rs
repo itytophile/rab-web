@@ -26,7 +26,7 @@ pub enum UiSymbole {
     Filter,
     MyTalismans,
     Home,
-    Save,
+    TalismansName,
 }
 
 pub trait Translation: English + French {

@@ -132,7 +132,7 @@ impl French for super::UiSymbole {
             Filter => "Filtre",
             MyTalismans => "Mes talismans",
             Home => "Accueil",
-            Save => "Sauvegarder",
+            TalismansName => "Nom du talisman",
         }
     }
 }

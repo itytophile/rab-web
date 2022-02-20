@@ -162,7 +162,7 @@ fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) 
     }
 }
 
-#[inline_props] // can't use build a parameter name
+#[inline_props] // can't use build as parameter name
 fn BuildView<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
     let locale = *locale;
 
