@@ -5,7 +5,7 @@ mod slot_button;
 mod talismans;
 
 pub(crate) use add_skill::AddSkill;
-pub use home::Home;
+pub(crate) use home::Home;
 pub(crate) use skill_row::SkillRow;
-pub use slot_button::SlotButton;
-pub use talismans::Talismans;
+pub(crate) use slot_button::SlotButton;
+pub(crate) use talismans::Talismans;

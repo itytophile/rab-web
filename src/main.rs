@@ -30,12 +30,20 @@ enum Route {
 fn app(cx: Scope) -> Element {
     let (locale, set_locale) = use_state(&cx, || Locale::French);
     let (route, set_route) = use_state(&cx, || Route::Home);
+    let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
+    let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
 
     let locale = *locale;
 
     let routes = match route {
-        Route::Home => cx.render(rsx!(Home { locale: locale })),
-        Route::Talismans => cx.render(rsx!(Talismans { locale: locale })),
+        Route::Home => cx.render(rsx!(Home {
+            locale: locale,
+            set_wishes: set_wishes
+        })),
+        Route::Talismans => cx.render(rsx!(Talismans {
+            locale: locale,
+            set_skills: set_skills
+        })),
     };
 
     cx.render(rsx!(

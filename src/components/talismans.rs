@@ -7,9 +7,13 @@ use dioxus::prelude::*;
 use rab_core::armor_and_skills::Skill;
 
 #[inline_props]
-pub fn Talismans(cx: Scope, locale: Locale) -> Element {
+pub(crate) fn Talismans<'a>(
+    cx: Scope,
+    set_skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    locale: Locale,
+) -> Element {
+    let skills = set_skills.get().as_ref();
     let locale = *locale;
-    let (skills, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: im_rc::HashSet<DisplaySkill> =

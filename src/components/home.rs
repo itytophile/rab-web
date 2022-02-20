@@ -12,8 +12,12 @@ use rab_core::{
 use std::str::FromStr;
 
 #[inline_props]
-pub fn Home(cx: Scope, locale: Locale) -> Element {
-    let (wishes, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
+pub(crate) fn Home<'a>(
+    cx: Scope,
+    locale: Locale,
+    set_wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+) -> Element {
+    let wishes = set_wishes.get().as_ref();
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: im_rc::HashSet<DisplaySkill> =
