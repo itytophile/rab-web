@@ -74,10 +74,13 @@ pub(crate) fn Talismans<'a>(
         set_talisman_slots(Default::default())
     };
 
-    let talisman_views = talismans.iter().map(|talisman| {
+    let talisman_views = talismans.iter().enumerate().map(|(index, talisman)| {
         rsx!(TalismanView {
             talisman: talisman,
-            locale: locale
+            locale: locale,
+            set_talismans: set_talismans,
+            index: index,
+            storage: storage
         })
     });
 
@@ -131,7 +134,14 @@ pub(crate) fn Talismans<'a>(
 }
 
 #[inline_props] // can't use build a parameter name
-fn TalismanView<'a>(cx: Scope, talisman: &'a Talisman, locale: Locale) -> Element {
+fn TalismanView<'a>(
+    cx: Scope,
+    talisman: &'a Talisman,
+    locale: Locale,
+    set_talismans: &'a UseState<im_rc::Vector<Talisman>>,
+    index: usize,
+    storage: &'a Storage,
+) -> Element {
     let locale = *locale;
 
     let slots = if talisman.slots.is_empty() {
@@ -155,9 +165,20 @@ fn TalismanView<'a>(cx: Scope, talisman: &'a Talisman, locale: Locale) -> Elemen
         })
     });
 
+    let delete_talisman = |_| {
+        set_talismans.with_mut(|talismans| {
+            talismans.remove(*index);
+            storage.save_talismans(talismans)
+        })
+    };
+
     cx.render(rsx!(article { class: "panel is-primary",
-        p { class: "panel-heading",
+        p { class: "message-header" ,
             [talisman.name.as_str()]
+            button {
+                class: "delete",
+                onclick: delete_talisman
+            }
         }
         span { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
