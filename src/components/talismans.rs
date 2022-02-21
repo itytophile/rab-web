@@ -1,10 +1,12 @@
 use crate::{
     components::{AddSkill, SkillRow, SlotButton},
     locale::{Locale, Translation, UiSymbole},
+    storage::MyStorage,
     DisplaySkill, Talisman,
 };
 use dioxus::prelude::*;
 use rab_core::armor_and_skills::Skill;
+use web_sys::Storage;
 
 #[inline_props]
 pub(crate) fn Talismans<'a>(
@@ -12,6 +14,7 @@ pub(crate) fn Talismans<'a>(
     set_skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     locale: Locale,
     set_talismans: &'a UseState<im_rc::Vector<Talisman>>,
+    storage: &'a Storage,
 ) -> Element {
     let skills = set_skills.get().as_ref();
     let talismans = set_talismans.get().as_ref();
@@ -51,17 +54,20 @@ pub(crate) fn Talismans<'a>(
     let placeholder = UiSymbole::TalismansName.translate(locale);
 
     let save_talisman = |_| {
-        set_talismans.make_mut().push_back(Talisman {
-            name: talisman_name.clone(),
-            skills: skills
-                .iter()
-                .map(|&(skill, amount)| (*skill, amount))
-                .collect(),
-            slots: talisman_slots
-                .iter()
-                .copied()
-                .filter(|slot| *slot != 0)
-                .collect(),
+        set_talismans.with_mut(|talismans| {
+            talismans.push_back(Talisman {
+                name: talisman_name.clone(),
+                skills: skills
+                    .iter()
+                    .map(|&(skill, amount)| (*skill, amount))
+                    .collect(),
+                slots: talisman_slots
+                    .iter()
+                    .copied()
+                    .filter(|slot| *slot != 0)
+                    .collect(),
+            });
+            storage.save_talismans(talismans);
         });
         set_talisman_name(String::new());
         set_skills(im_rc::Vector::new());

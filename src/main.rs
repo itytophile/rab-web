@@ -64,13 +64,14 @@ enum Route {
 }
 
 fn app(cx: Scope) -> Element {
-    let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
-
+    let (storage, _) = use_state(&cx, || {
+        web_sys::window().unwrap().local_storage().unwrap().unwrap()
+    });
     let (locale, set_locale) = use_state(&cx, || storage.get_locale().unwrap_or(Locale::English));
     let (route, set_route) = use_state(&cx, || Route::Home);
     let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
-    let (talismans, set_talismans) = use_state(&cx, im_rc::Vector::<Talisman>::new);
+    let (talismans, set_talismans) = use_state(&cx, || storage.get_talismans().unwrap_or_default());
 
     let locale = *locale;
 
@@ -83,7 +84,8 @@ fn app(cx: Scope) -> Element {
         Route::Talismans => rsx!(Talismans {
             locale: locale,
             set_skills: set_skills,
-            set_talismans: set_talismans
+            set_talismans: set_talismans,
+            storage: storage
         }),
     };
 
@@ -105,7 +107,7 @@ fn Navbar<'a>(
     cx: Scope,
     set_locale: &'a UseState<Locale>,
     set_route: &'a UseState<Route>,
-    storage: Storage,
+    storage: &'a Storage,
 ) -> Element {
     let (is_active, set_is_active) = use_state(&cx, || false);
 
