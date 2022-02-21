@@ -5,7 +5,7 @@ mod components;
 mod locale;
 mod storage;
 
-use components::{Home, Talismans};
+use components::{Builds, Home, Talismans};
 use dioxus::prelude::*;
 use locale::{Locale, Translation, UiSymbole};
 use rab_core::armor_and_skills::{Armor, Skill};
@@ -57,10 +57,11 @@ impl Deref for DisplaySkill {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum Route {
     Home,
     Talismans,
+    Builds,
 }
 
 fn app(cx: Scope) -> Element {
@@ -87,6 +88,7 @@ fn app(cx: Scope) -> Element {
             set_talismans: set_talismans,
             storage: storage
         }),
+        Route::Builds => rsx!(Builds {}),
     };
 
     cx.render(rsx!(
@@ -133,16 +135,6 @@ fn Navbar<'a>(
     let locale = **set_locale.get();
     let route = **set_route.get();
 
-    let class_talisman = match route {
-        Route::Talismans => "button is-static",
-        _ => "button",
-    };
-
-    let class_home = match route {
-        Route::Home => "button is-static",
-        _ => "button",
-    };
-
     let spans = (0..3).map(|_| {
         rsx!(span {
             aria_hidden: "true"
@@ -154,6 +146,32 @@ fn Navbar<'a>(
     } else {
         ("navbar-burger", "navbar-menu")
     };
+
+    let links = [
+        (Route::Home, "fa-solid fa-house", UiSymbole::Home),
+        (
+            Route::Talismans,
+            "fa-solid fa-lightbulb",
+            UiSymbole::MyTalismans,
+        ),
+        (Route::Builds, "fa-solid fa-star", UiSymbole::MyBuilds),
+    ]
+    .iter()
+    .map(|(to_route, icon, label)| {
+        let class = if *to_route == route {
+            "button is-static"
+        } else {
+            "button"
+        };
+        rsx!(a {
+            class: "{class}",
+            onclick: move |_| set_route(*to_route),
+            span { class: "icon is-small",
+                i { class: "{icon}" }
+            }
+            span { [label.translate(locale)] }
+        })
+    });
 
     cx.render(
         rsx!(nav { class: "navbar", role: "navigation", aria_label: "main navigation",
@@ -174,7 +192,6 @@ fn Navbar<'a>(
                         }
                     }
                 }
-
                 a {
                     role: "button",
                     class: "{burger_class}",
@@ -186,18 +203,7 @@ fn Navbar<'a>(
                 div { class: "navbar-end",
                     div { class: "navbar-item",
                         div { class:"buttons",
-                            a { class: "{class_home}", onclick: move |_| set_route(Route::Home),
-                                span { class: "icon is-small",
-                                    i { class: "fa-solid fa-house" }
-                                }
-                                span { [UiSymbole::Home.translate(locale)] }
-                            }
-                            a { class: "{class_talisman}", onclick: move |_| set_route(Route::Talismans),
-                                span { class: "icon is-small",
-                                    i { class: "fa-solid fa-lightbulb" }
-                                }
-                                span { [UiSymbole::MyTalismans.translate(locale)] }
-                            }
+                            links
                         }
                     }
                 }

@@ -136,6 +136,7 @@ impl English for super::UiSymbole {
             NoSlots => "No slots",
             ShowSkills => "Show skills",
             HideSkills => "Hide skills",
+            MyBuilds => "My builds",
         }
     }
 }

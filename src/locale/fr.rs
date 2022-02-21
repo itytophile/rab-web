@@ -136,6 +136,7 @@ impl French for super::UiSymbole {
             NoSlots => "Sans emplacements",
             ShowSkills => "Afficher les talents",
             HideSkills => "Cacher les talents",
+            MyBuilds => "Mes panoplies",
         }
     }
 }

@@ -29,6 +29,7 @@ pub enum UiSymbole {
     NoSlots,
     ShowSkills,
     HideSkills,
+    MyBuilds,
 }
 
 pub trait Translation: English + French {
