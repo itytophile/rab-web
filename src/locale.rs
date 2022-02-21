@@ -2,8 +2,9 @@ pub mod en;
 mod fr;
 
 use self::{en::English, fr::French};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, PartialEq, strum_macros::EnumIter)]
+#[derive(Clone, Copy, PartialEq, strum_macros::EnumIter, Serialize, Deserialize)]
 pub enum Locale {
     English,
     French,

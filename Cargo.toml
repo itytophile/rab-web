@@ -12,9 +12,11 @@ edition = "2021"
 [dependencies]
 rab-core = "0.4"
 dioxus = { version = "0.1", features = ["web"] }
-im-rc = "15"
+im-rc = { version = "15", features = ["serde"] }
 strum = "0.23"
 strum_macros = "0.23"
 lexical-sort = "0.3"
 diacritics = "0.1"
 web-sys = { version = "0.3", features = ["Storage"] }
+ron = "0.7"
+serde = { version = "1", features = ["derive"] }

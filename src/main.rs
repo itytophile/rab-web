@@ -3,18 +3,22 @@
 mod armors;
 mod components;
 mod locale;
+mod storage;
 
 use components::{Home, Talismans};
 use dioxus::prelude::*;
 use locale::{Locale, Translation, UiSymbole};
 use rab_core::armor_and_skills::{Armor, Skill};
+use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+use storage::MyStorage;
 use strum::IntoEnumIterator;
+use web_sys::Storage;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct DisplaySkill(Skill);
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct Talisman {
     name: String,
     skills: im_rc::Vector<(Skill, u8)>,
@@ -60,7 +64,9 @@ enum Route {
 }
 
 fn app(cx: Scope) -> Element {
-    let (locale, set_locale) = use_state(&cx, || Locale::French);
+    let storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+
+    let (locale, set_locale) = use_state(&cx, || storage.get_locale().unwrap_or(Locale::English));
     let (route, set_route) = use_state(&cx, || Route::Home);
     let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
@@ -84,7 +90,8 @@ fn app(cx: Scope) -> Element {
     cx.render(rsx!(
     Navbar {
         set_locale: set_locale,
-        set_route: set_route
+        set_route: set_route,
+        storage: storage
     }
     section { class: "section",
         div { class: "container",
@@ -98,6 +105,7 @@ fn Navbar<'a>(
     cx: Scope,
     set_locale: &'a UseState<Locale>,
     set_route: &'a UseState<Route>,
+    storage: Storage,
 ) -> Element {
     let (is_active, set_is_active) = use_state(&cx, || false);
 
@@ -113,6 +121,7 @@ fn Navbar<'a>(
             onclick: move |_| {
                 set_locale(locale);
                 set_is_active(false);
+                storage.save_locale(locale)
             },
             [locale.native()]
         }))
