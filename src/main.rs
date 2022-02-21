@@ -109,9 +109,10 @@ fn Navbar<'a>(
     set_route: &'a UseState<Route>,
     storage: &'a Storage,
 ) -> Element {
+    let (is_dropdown_active, set_is_dropdown_active) = use_state(&cx, || false);
     let (is_active, set_is_active) = use_state(&cx, || false);
 
-    let class_dropdown = if *is_active {
+    let class_dropdown = if *is_dropdown_active {
         "dropdown is-active"
     } else {
         "dropdown"
@@ -122,7 +123,7 @@ fn Navbar<'a>(
             class:"dropdown-item",
             onclick: move |_| {
                 set_locale(locale);
-                set_is_active(false);
+                set_is_dropdown_active(false);
                 storage.save_locale(locale)
             },
             [locale.native()]
@@ -142,28 +143,27 @@ fn Navbar<'a>(
         _ => "button",
     };
 
+    let spans = (0..3).map(|_| {
+        rsx!(span {
+            aria_hidden: "true"
+        })
+    });
+
+    let (burger_class, menu_class) = if *is_active {
+        ("navbar-burger is-active", "navbar-menu is-active")
+    } else {
+        ("navbar-burger", "navbar-menu")
+    };
+
     cx.render(
         rsx!(nav { class: "navbar", role: "navigation", aria_label: "main navigation",
+            div { class: "navbar-brand",
                 div { class: "navbar-item",
                     div { class: "{class_dropdown}",
                         div { class: "dropdown-trigger",
-                            div { class:"buttons",
-                                a { class: "button", onclick: |_| set_is_active(!*is_active),
-                                    span { class: "icon is-small",
-                                        i { class: "fa-solid fa-globe" }
-                                    }
-                                }
-                                a { class: "{class_home}", onclick: move |_| set_route(Route::Home),
-                                    span { class: "icon is-small",
-                                        i { class: "fa-solid fa-house" }
-                                    }
-                                    span { [UiSymbole::Home.translate(locale)] }
-                                }
-                                a { class: "{class_talisman}", onclick: move |_| set_route(Route::Talismans),
-                                    span { class: "icon is-small",
-                                        i { class: "fa-solid fa-lightbulb" }
-                                    }
-                                    span { [UiSymbole::MyTalismans.translate(locale)] }
+                            a { class: "button", onclick: |_| *set_is_dropdown_active.make_mut() ^= true,
+                                span { class: "icon is-small",
+                                    i { class: "fa-solid fa-globe" }
                                 }
                             }
                         }
@@ -174,6 +174,34 @@ fn Navbar<'a>(
                         }
                     }
                 }
+
+                a {
+                    role: "button",
+                    class: "{burger_class}",
+                    onclick: |_| *set_is_active.make_mut() ^= true,
+                    spans
+                }
+            }
+            div { class: "{menu_class}",
+                div { class: "navbar-end",
+                    div { class: "navbar-item",
+                        div { class:"buttons",
+                            a { class: "{class_home}", onclick: move |_| set_route(Route::Home),
+                                span { class: "icon is-small",
+                                    i { class: "fa-solid fa-house" }
+                                }
+                                span { [UiSymbole::Home.translate(locale)] }
+                            }
+                            a { class: "{class_talisman}", onclick: move |_| set_route(Route::Talismans),
+                                span { class: "icon is-small",
+                                    i { class: "fa-solid fa-lightbulb" }
+                                }
+                                span { [UiSymbole::MyTalismans.translate(locale)] }
+                            }
+                        }
+                    }
+                }
+            }
         }),
     )
 }
