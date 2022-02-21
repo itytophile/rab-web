@@ -152,7 +152,22 @@ fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) 
 
 #[inline_props] // can't use build as parameter name
 fn BuildView<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
+    let (visible, set_visible) = use_state(&cx, || false);
     let locale = *locale;
+
+    let mut all_skills: Vec<(Skill, u8)> = b.get_all_skills_and_amounts().drain().collect();
+    all_skills.sort_unstable_by_key(|(_, amount)| *amount);
+
+    let skills = all_skills.iter().rev().map(|(skill, amount)| {
+        let amount = format!(" x{amount}");
+        rsx!(span { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"fa-solid fa-pepper-hot"}
+            }
+            [DisplaySkill(*skill).translate(locale)]
+            "{amount}"
+        })
+    });
 
     cx.render(rsx!(article { class: "panel is-primary",
         p { class: "panel-heading" }
@@ -192,5 +207,13 @@ fn BuildView<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
             }
             [armor_to_string(b.talisman.as_ref(),locale)]
         }
+        div { class: "panel-block",
+            button {
+                class: "button is-link is-outlined is-fullwidth",
+                onclick: |_| *set_visible.make_mut() ^= true,
+                [if *visible { UiSymbole::HideSkills } else { UiSymbole::ShowSkills }.translate(locale)]
+            }
+        }
+        visible.then(|| rsx!(skills))
     }))
 }

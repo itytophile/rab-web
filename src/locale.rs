@@ -27,6 +27,8 @@ pub enum UiSymbole {
     Home,
     TalismansName,
     NoSlots,
+    ShowSkills,
+    HideSkills,
 }
 
 pub trait Translation: English + French {

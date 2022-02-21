@@ -131,9 +131,11 @@ impl French for super::UiSymbole {
             SearchBuilds => "Recherche",
             Filter => "Filtre",
             MyTalismans => "Mes talismans",
-            Home => "Accueil",
+            Home => "Recherche",
             TalismansName => "Nom du talisman",
             NoSlots => "Sans emplacements",
+            ShowSkills => "Afficher les talents",
+            HideSkills => "Cacher les talents",
         }
     }
 }

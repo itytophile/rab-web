@@ -131,9 +131,11 @@ impl English for super::UiSymbole {
             SearchBuilds => "Search builds",
             Filter => "Filter",
             MyTalismans => "My talismans",
-            Home => "Home",
+            Home => "Search",
             TalismansName => "Talisman's name",
             NoSlots => "No slots",
+            ShowSkills => "Show skills",
+            HideSkills => "Hide skills",
         }
     }
 }
