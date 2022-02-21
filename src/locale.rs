@@ -3,15 +3,13 @@ mod fr;
 
 use self::{en::English, fr::French};
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, strum_macros::EnumIter)]
 pub enum Locale {
     English,
     French,
 }
 
 impl Locale {
-    pub const ALL: [Locale; 2] = [Locale::English, Locale::French];
-
     pub fn native(&self) -> &'static str {
         match self {
             Locale::English => "English",

@@ -9,6 +9,7 @@ use dioxus::prelude::*;
 use locale::{Locale, Translation, UiSymbole};
 use rab_core::armor_and_skills::{Armor, Skill};
 use std::ops::Deref;
+use strum::IntoEnumIterator;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct DisplaySkill(Skill);
@@ -106,7 +107,7 @@ fn Navbar<'a>(
         "dropdown"
     };
 
-    let locales = Locale::ALL.iter().map(|&locale| {
+    let locales = Locale::iter().map(|locale| {
         cx.render(rsx!(a {
             class:"dropdown-item",
             onclick: move |_| {
