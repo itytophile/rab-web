@@ -7,7 +7,7 @@ mod locale;
 use components::{Home, Talismans};
 use dioxus::prelude::*;
 use locale::{Locale, Translation, UiSymbole};
-use rab_core::armor_and_skills::Skill;
+use rab_core::armor_and_skills::{Armor, Skill};
 use std::ops::Deref;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -18,6 +18,30 @@ struct Talisman {
     name: String,
     skills: im_rc::Vector<(Skill, u8)>,
     slots: im_rc::Vector<u8>,
+}
+
+impl From<&Talisman> for Armor {
+    fn from(
+        Talisman {
+            name,
+            slots,
+            skills,
+        }: &Talisman,
+    ) -> Self {
+        Armor {
+            name: name.clone(),
+            skills: skills.iter().copied().collect(),
+            slots: slots.iter().copied().collect(),
+            rare: 1,
+            defense: 0,
+            fire: 0,
+            water: 0,
+            thunder: 0,
+            ice: 0,
+            dragon: 0,
+            gender: None,
+        }
+    }
 }
 
 impl Deref for DisplaySkill {
@@ -39,14 +63,15 @@ fn app(cx: Scope) -> Element {
     let (route, set_route) = use_state(&cx, || Route::Home);
     let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
-    let (_, set_talismans) = use_state(&cx, im_rc::Vector::<Talisman>::new);
+    let (talismans, set_talismans) = use_state(&cx, im_rc::Vector::<Talisman>::new);
 
     let locale = *locale;
 
     let routes = match route {
         Route::Home => rsx!(Home {
             locale: locale,
-            set_wishes: set_wishes
+            set_wishes: set_wishes,
+            talismans: talismans
         }),
         Route::Talismans => rsx!(Talismans {
             locale: locale,

@@ -2,7 +2,7 @@ use crate::{
     armors::{self, ARMS, CHESTS, HELMETS, LEGS, WAISTS},
     components::{AddSkill, SkillRow, SlotButton},
     locale::{Locale, Translation, UiSymbole},
-    DisplaySkill,
+    DisplaySkill, Talisman,
 };
 use dioxus::prelude::*;
 use rab_core::{
@@ -16,6 +16,7 @@ pub(crate) fn Home<'a>(
     cx: Scope,
     locale: Locale,
     set_wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    talismans: &'a im_rc::Vector<Talisman>,
 ) -> Element {
     let wishes = set_wishes.get().as_ref();
     let all_skills: im_rc::HashSet<DisplaySkill> =
@@ -64,27 +65,12 @@ pub(crate) fn Home<'a>(
                 .collect::<Vec<(Skill, u8)>>()
                 .as_slice(),
             AllArmorSlices {
-                arms: &ARMS
-                    .iter()
-                    .map(|armor| armor.into())
-                    .collect::<Vec<Armor>>(),
-                chests: &CHESTS
-                    .iter()
-                    .map(|armor| armor.into())
-                    .collect::<Vec<Armor>>(),
-                helmets: &HELMETS
-                    .iter()
-                    .map(|armor| armor.into())
-                    .collect::<Vec<Armor>>(),
-                legs: &LEGS
-                    .iter()
-                    .map(|armor| armor.into())
-                    .collect::<Vec<Armor>>(),
-                talismans: &[],
-                waists: &WAISTS
-                    .iter()
-                    .map(|armor| armor.into())
-                    .collect::<Vec<Armor>>(),
+                arms: &ARMS.iter().map(Into::into).collect::<Vec<Armor>>(),
+                chests: &CHESTS.iter().map(Into::into).collect::<Vec<Armor>>(),
+                helmets: &HELMETS.iter().map(Into::into).collect::<Vec<Armor>>(),
+                legs: &LEGS.iter().map(Into::into).collect::<Vec<Armor>>(),
+                talismans: &talismans.iter().map(Into::into).collect::<Vec<Armor>>(),
+                waists: &WAISTS.iter().map(Into::into).collect::<Vec<Armor>>(),
             },
             *gender,
             *weapon_slots,
@@ -154,9 +140,11 @@ pub(crate) fn Home<'a>(
 
 fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) -> &str {
     if let Some((armor, _)) = armor {
-        armors::Armor::from_str(&armor.name)
-            .unwrap()
-            .translate(locale)
+        if let Ok(name) = armors::Armor::from_str(&armor.name) {
+            name.translate(locale)
+        } else {
+            &armor.name
+        }
     } else {
         "Free"
     }
