@@ -498,6 +498,7 @@ dependencies = [
  "rab-core",
  "strum",
  "strum_macros",
+ "web-sys",
 ]
 
 [[package]]
