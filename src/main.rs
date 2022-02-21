@@ -148,7 +148,7 @@ fn Navbar<'a>(
     };
 
     let links = [
-        (Route::Home, "fa-solid fa-house", UiSymbole::Home),
+        (Route::Home, "fa-solid fa-magnifying-glass", UiSymbole::Home),
         (
             Route::Talismans,
             "fa-solid fa-lightbulb",
