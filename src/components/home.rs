@@ -173,7 +173,7 @@ fn BuildView<'a>(
     cx.render(rsx!(article { class: "panel is-primary",
         p { class: "panel-heading" }
         div { class: "panel-block",
-            div { class: "field has-addons is-expanded", style: "flex-grow: 1;",
+            div { class: "field has-addons is-expanded is-flex-grow-1",
                 div { class: "control is-expanded",
                     input {
                         class: "input",
