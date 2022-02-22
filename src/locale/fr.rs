@@ -139,6 +139,7 @@ impl French for super::UiSymbole {
             MyBuilds => "Mes panoplies",
             Save => "Sauvegarder",
             BuildsName => "Nom de la panoplie",
+            NoSavedBuilds => "Pas de panoplies sauvegardées, vous pouvez en faire ici ",
         }
     }
 }

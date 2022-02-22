@@ -32,6 +32,7 @@ pub enum UiSymbole {
     MyBuilds,
     Save,
     BuildsName,
+    NoSavedBuilds,
 }
 
 pub trait Translation: English + French {

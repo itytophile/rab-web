@@ -139,6 +139,7 @@ impl English for super::UiSymbole {
             MyBuilds => "My builds",
             Save => "Save",
             BuildsName => "Build's name",
+            NoSavedBuilds => "No saved builds, you can save ones here ",
         }
     }
 }

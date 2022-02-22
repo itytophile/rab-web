@@ -48,7 +48,7 @@ pub(crate) fn Builds<'a>(
         });
     cx.render(rsx!(if saved_builds.is_empty() {
         rsx!(
-            "No saved builds, you can save ones here "
+            [UiSymbole::NoSavedBuilds.translate(locale)]
             a {
                 onclick: move |_| set_route(Route::Home),
                 span { class: "icon is-small mr-1",
