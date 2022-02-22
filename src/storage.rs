@@ -1,44 +1,54 @@
+use std::marker::PhantomData;
+
 use crate::{locale::Locale, Talisman};
 use rab_core::build_search::Build;
+use serde::{de::DeserializeOwned, Serialize};
+use web_sys::Storage;
 
 pub(crate) trait MyStorage {
-    fn save_talismans(&self, talismans: &im_rc::Vector<Talisman>);
-    fn get_talismans(&self) -> Option<im_rc::Vector<Talisman>>;
-    fn save_locale(&self, locale: Locale);
-    fn get_locale(&self) -> Option<Locale>;
-    fn save_builds(&self, builds: &im_rc::Vector<(String, Build)>);
-    fn get_builds(&self) -> Option<im_rc::Vector<(String, Build)>>;
+    fn talismans(&self) -> Resource<im_rc::Vector<Talisman>>;
+    fn locale(&self) -> Resource<Locale>;
+    fn builds(&self) -> Resource<im_rc::Vector<(String, Build)>>;
 }
 
 const TALISMANS: &str = "talismans";
 const LOCALE: &str = "locale";
 const BUILDS: &str = "builds";
 
-impl MyStorage for web_sys::Storage {
-    fn save_talismans(&self, talismans: &im_rc::Vector<Talisman>) {
-        self.set_item(TALISMANS, &ron::to_string(talismans).unwrap())
+impl MyStorage for Storage {
+    fn talismans(&self) -> Resource<im_rc::Vector<Talisman>> {
+        Resource::new(TALISMANS, self)
+    }
+
+    fn locale(&self) -> Resource<Locale> {
+        Resource::new(LOCALE, self)
+    }
+
+    fn builds(&self) -> Resource<im_rc::Vector<(String, Build)>> {
+        Resource::new(BUILDS, self)
+    }
+}
+
+pub(crate) struct Resource<'a, T: Serialize + DeserializeOwned>(
+    &'static str,
+    &'a Storage,
+    PhantomData<T>,
+);
+
+impl<'a, T: Serialize + DeserializeOwned> Resource<'a, T> {
+    pub(crate) fn new(key: &'static str, storage: &'a Storage) -> Resource<'a, T> {
+        Resource(key, storage, PhantomData)
+    }
+
+    pub(crate) fn save(self, value: &T) {
+        let Resource(key, storage, _) = self;
+        storage
+            .set_item(key, &ron::to_string(value).unwrap())
             .unwrap()
     }
 
-    fn get_talismans(&self) -> Option<im_rc::Vector<Talisman>> {
-        ron::from_str(&self.get_item(TALISMANS).unwrap()?).ok()
-    }
-
-    fn save_locale(&self, locale: Locale) {
-        self.set_item(LOCALE, &ron::to_string(&locale).unwrap())
-            .unwrap()
-    }
-
-    fn get_locale(&self) -> Option<Locale> {
-        ron::from_str(&self.get_item(LOCALE).unwrap()?).ok()
-    }
-
-    fn save_builds(&self, builds: &im_rc::Vector<(String, Build)>) {
-        self.set_item(BUILDS, &ron::to_string(&builds).unwrap())
-            .unwrap()
-    }
-
-    fn get_builds(&self) -> Option<im_rc::Vector<(String, Build)>> {
-        ron::from_str(&self.get_item(BUILDS).unwrap()?).ok()
+    pub(crate) fn get(self) -> Option<T> {
+        let Resource(key, storage, _) = self;
+        ron::from_str(&storage.get_item(key).unwrap()?).ok()
     }
 }

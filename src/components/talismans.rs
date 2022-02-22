@@ -67,7 +67,7 @@ pub(crate) fn Talismans<'a>(
                     .filter(|slot| *slot != 0)
                     .collect(),
             });
-            storage.save_talismans(talismans);
+            storage.talismans().save(talismans);
         });
         set_talisman_name(String::new());
         set_skills(im_rc::Vector::new());
@@ -168,7 +168,7 @@ fn TalismanView<'a>(
     let delete_talisman = |_| {
         set_talismans.with_mut(|talismans| {
             talismans.remove(*index);
-            storage.save_talismans(talismans)
+            storage.talismans().save(talismans)
         })
     };
 

@@ -68,12 +68,13 @@ fn app(cx: Scope) -> Element {
     let (storage, _) = use_state(&cx, || {
         web_sys::window().unwrap().local_storage().unwrap().unwrap()
     });
-    let (locale, set_locale) = use_state(&cx, || storage.get_locale().unwrap_or(Locale::English));
+    let (locale, set_locale) = use_state(&cx, || storage.locale().get().unwrap_or(Locale::English));
     let (route, set_route) = use_state(&cx, || Route::Home);
     let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
-    let (talismans, set_talismans) = use_state(&cx, || storage.get_talismans().unwrap_or_default());
-    let (_, set_saved_builds) = use_state(&cx, || storage.get_builds().unwrap_or_default());
+    let (talismans, set_talismans) =
+        use_state(&cx, || storage.talismans().get().unwrap_or_default());
+    let (_, set_saved_builds) = use_state(&cx, || storage.builds().get().unwrap_or_default());
 
     let locale = *locale;
 
@@ -129,7 +130,7 @@ fn Navbar<'a>(
             onclick: move |_| {
                 set_locale(locale);
                 set_is_dropdown_active(false);
-                storage.save_locale(locale)
+                storage.locale().save(&locale)
             },
             [locale.native()]
         }))

@@ -188,7 +188,7 @@ fn BuildView<'a>(
     let save_build = |_| {
         set_saved_builds.with_mut(|builds| {
             builds.push_back((build_name.clone(), b.clone()));
-            storage.save_builds(builds);
+            storage.builds().save(builds);
         });
         set_build_name(String::new());
     };
