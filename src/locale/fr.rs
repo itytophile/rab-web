@@ -137,6 +137,8 @@ impl French for super::UiSymbole {
             ShowSkills => "Afficher les talents",
             HideSkills => "Cacher les talents",
             MyBuilds => "Mes panoplies",
+            Save => "Sauvegarder",
+            BuildsName => "Nom de la panoplie",
         }
     }
 }

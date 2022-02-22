@@ -30,6 +30,8 @@ pub enum UiSymbole {
     ShowSkills,
     HideSkills,
     MyBuilds,
+    Save,
+    BuildsName,
 }
 
 pub trait Translation: English + French {

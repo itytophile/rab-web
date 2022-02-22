@@ -137,6 +137,8 @@ impl English for super::UiSymbole {
             ShowSkills => "Show skills",
             HideSkills => "Hide skills",
             MyBuilds => "My builds",
+            Save => "Save",
+            BuildsName => "Build's name",
         }
     }
 }

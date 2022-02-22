@@ -2,6 +2,7 @@ use crate::{
     armors::{self, ARMS, CHESTS, HELMETS, LEGS, WAISTS},
     components::{AddSkill, SkillRow, SlotButton},
     locale::{Locale, Translation, UiSymbole},
+    storage::MyStorage,
     DisplaySkill, Talisman,
 };
 use dioxus::prelude::*;
@@ -10,6 +11,7 @@ use rab_core::{
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
 };
 use std::str::FromStr;
+use web_sys::Storage;
 
 #[inline_props]
 pub(crate) fn Home<'a>(
@@ -17,6 +19,8 @@ pub(crate) fn Home<'a>(
     locale: Locale,
     set_wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     talismans: &'a im_rc::Vector<Talisman>,
+    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    storage: &'a Storage,
 ) -> Element {
     let wishes = set_wishes.get().as_ref();
     let all_skills: im_rc::HashSet<DisplaySkill> =
@@ -80,7 +84,9 @@ pub(crate) fn Home<'a>(
     let build_views = builds.iter().map(|build| {
         rsx! {BuildView {
             b: build,
-            locale: *locale
+            locale: *locale,
+            set_saved_builds: set_saved_builds,
+            storage: storage
         }}
     });
 
@@ -151,9 +157,17 @@ fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) 
 }
 
 #[inline_props] // can't use build as parameter name
-fn BuildView<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
+fn BuildView<'a>(
+    cx: Scope,
+    b: &'a Build,
+    locale: Locale,
+    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    storage: &'a Storage,
+) -> Element {
     let (visible, set_visible) = use_state(&cx, || false);
+    let (build_name, set_build_name) = use_state(&cx, String::new);
     let locale = *locale;
+    let b = *b;
 
     let mut all_skills: Vec<(Skill, u8)> = b.get_all_skills_and_amounts().drain().collect();
     all_skills.sort_unstable_by_key(|(_, amount)| *amount);
@@ -169,8 +183,40 @@ fn BuildView<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
         })
     });
 
+    let placeholder = UiSymbole::BuildsName.translate(locale);
+
+    let save_build = |_| {
+        set_saved_builds.with_mut(|builds| {
+            builds.push_back((build_name.clone(), b.clone()));
+            storage.save_builds(builds);
+        });
+        set_build_name(String::new());
+    };
+
     cx.render(rsx!(article { class: "panel is-primary",
         p { class: "panel-heading" }
+        div { class: "panel-block",
+            div { class: "field has-addons is-expanded", style: "flex-grow: 1;",
+                div { class: "control is-expanded",
+                    input {
+                        class: "input",
+                        r#type: "text",
+                        placeholder: "{placeholder}",
+                        oninput: |event| set_build_name(event.value.clone())
+                    }
+                }
+                div { class: "control",
+                    button {
+                        class: "button is-info",
+                        onclick: save_build,
+                        span { class: "icon is-small",
+                            i { class: "fa-solid fa-star" }
+                        }
+                        span { [UiSymbole::Save.translate(locale)] }
+                    }
+                }
+            }
+        }
         a { class: "panel-block",
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-hat-cowboy"}

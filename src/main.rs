@@ -73,6 +73,7 @@ fn app(cx: Scope) -> Element {
     let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
     let (talismans, set_talismans) = use_state(&cx, || storage.get_talismans().unwrap_or_default());
+    let (_, set_saved_builds) = use_state(&cx, || storage.get_builds().unwrap_or_default());
 
     let locale = *locale;
 
@@ -80,7 +81,9 @@ fn app(cx: Scope) -> Element {
         Route::Home => rsx!(Home {
             locale: locale,
             set_wishes: set_wishes,
-            talismans: talismans
+            talismans: talismans,
+            set_saved_builds: set_saved_builds,
+            storage: storage
         }),
         Route::Talismans => rsx!(Talismans {
             locale: locale,
