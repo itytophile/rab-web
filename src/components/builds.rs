@@ -20,6 +20,21 @@ pub(crate) fn Builds<'a>(
     let saved_builds = set_saved_builds.get();
     let builds = saved_builds
         .iter()
+        .take(saved_builds.len() / 2)
+        .enumerate()
+        .map(|(index, (name, build))| {
+            rsx!(BuildView {
+                b: build,
+                locale: locale,
+                set_saved_builds: set_saved_builds,
+                storage: storage,
+                name: name,
+                index: index
+            })
+        });
+    let other_builds = saved_builds
+        .iter()
+        .skip(saved_builds.len() / 2)
         .enumerate()
         .map(|(index, (name, build))| {
             rsx!(BuildView {
@@ -43,7 +58,14 @@ pub(crate) fn Builds<'a>(
             }
         )
     } else {
-        rsx!(builds)
+        rsx!(div { class: "columns",
+            div { class: "column",
+                other_builds
+            }
+            div { class: "column",
+                builds
+            }
+        })
     }))
 }
 
