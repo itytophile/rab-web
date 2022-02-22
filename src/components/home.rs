@@ -1,6 +1,6 @@
 use crate::{
-    armors::{self, ARMS, CHESTS, HELMETS, LEGS, WAISTS},
-    components::{AddSkill, SkillRow, SlotButton},
+    armors::{ARMS, CHESTS, HELMETS, LEGS, WAISTS},
+    components::{AddSkill, BuildDetails, SkillRow, SlotButton},
     locale::{Locale, Translation, UiSymbole},
     storage::MyStorage,
     DisplaySkill, Talisman,
@@ -10,7 +10,6 @@ use rab_core::{
     armor_and_skills::{Armor, Gender, Skill},
     build_search::{pre_selection_then_brute_force_search, AllArmorSlices, Build},
 };
-use std::str::FromStr;
 use web_sys::Storage;
 
 #[inline_props]
@@ -144,18 +143,6 @@ pub(crate) fn Home<'a>(
     ))
 }
 
-fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) -> &str {
-    if let Some((armor, _)) = armor {
-        if let Ok(name) = armors::Armor::from_str(&armor.name) {
-            name.translate(locale)
-        } else {
-            &armor.name
-        }
-    } else {
-        "Free"
-    }
-}
-
 #[inline_props] // can't use build as parameter name
 fn BuildView<'a>(
     cx: Scope,
@@ -164,24 +151,12 @@ fn BuildView<'a>(
     set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
     storage: &'a Storage,
 ) -> Element {
-    let (visible, set_visible) = use_state(&cx, || false);
     let (build_name, set_build_name) = use_state(&cx, String::new);
     let locale = *locale;
     let b = *b;
 
     let mut all_skills: Vec<(Skill, u8)> = b.get_all_skills_and_amounts().drain().collect();
     all_skills.sort_unstable_by_key(|(_, amount)| *amount);
-
-    let skills = all_skills.iter().rev().map(|(skill, amount)| {
-        let amount = format!(" x{amount}");
-        rsx!(span { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-pepper-hot"}
-            }
-            [DisplaySkill(*skill).translate(locale)]
-            "{amount}"
-        })
-    });
 
     let placeholder = UiSymbole::BuildsName.translate(locale);
 
@@ -192,6 +167,8 @@ fn BuildView<'a>(
         });
         set_build_name(String::new());
     };
+
+    let save_disabled = build_name.is_empty();
 
     cx.render(rsx!(article { class: "panel is-primary",
         p { class: "panel-heading" }
@@ -209,6 +186,7 @@ fn BuildView<'a>(
                     button {
                         class: "button is-info",
                         onclick: save_build,
+                        disabled: "{save_disabled}",
                         span { class: "icon is-small",
                             i { class: "fa-solid fa-star" }
                         }
@@ -217,49 +195,6 @@ fn BuildView<'a>(
                 }
             }
         }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-hat-cowboy"}
-            }
-            [armor_to_string(b.helmet.as_ref(), locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-shirt"}
-            }
-            [armor_to_string(b.chest.as_ref(), locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-mitten"}
-            }
-            [armor_to_string(b.arm.as_ref(),locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-archway"}
-            }
-            [armor_to_string(b.waist.as_ref(),locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-socks"}
-            }
-            [armor_to_string(b.leg.as_ref(),locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-lightbulb"}
-            }
-            [armor_to_string(b.talisman.as_ref(),locale)]
-        }
-        div { class: "panel-block",
-            button {
-                class: "button is-link is-outlined is-fullwidth",
-                onclick: |_| *set_visible.make_mut() ^= true,
-                [if *visible { UiSymbole::HideSkills } else { UiSymbole::ShowSkills }.translate(locale)]
-            }
-        }
-        visible.then(|| rsx!(skills))
+        BuildDetails { b: b, locale: locale }
     }))
 }

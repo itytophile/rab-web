@@ -92,7 +92,12 @@ fn app(cx: Scope) -> Element {
             set_talismans: set_talismans,
             storage: storage
         }),
-        Route::Builds => rsx!(Builds {}),
+        Route::Builds => rsx!(Builds {
+            set_saved_builds: set_saved_builds,
+            storage: storage,
+            locale: locale,
+            set_route: set_route
+        }),
     };
 
     cx.render(rsx!(

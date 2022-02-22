@@ -1,4 +1,5 @@
 mod add_skill;
+mod build_details;
 mod builds;
 mod home;
 mod skill_row;
@@ -6,6 +7,7 @@ mod slot_button;
 mod talismans;
 
 pub(crate) use add_skill::AddSkill;
+pub(crate) use build_details::BuildDetails;
 pub(crate) use builds::Builds;
 pub(crate) use home::Home;
 pub(crate) use skill_row::SkillRow;

@@ -1,6 +1,84 @@
+use crate::{
+    components::BuildDetails,
+    locale::{Locale, Translation, UiSymbole},
+    storage::MyStorage,
+    Route,
+};
 use dioxus::prelude::*;
+use rab_core::{armor_and_skills::Skill, build_search::Build};
+use web_sys::Storage;
 
 #[inline_props]
-pub(crate) fn Builds(cx: Scope) -> Element {
-    cx.render(rsx!("lol"))
+pub(crate) fn Builds<'a>(
+    cx: Scope,
+    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    storage: &'a Storage,
+    locale: Locale,
+    set_route: &'a UseState<Route>,
+) -> Element {
+    let locale = *locale;
+    let saved_builds = set_saved_builds.get();
+    let builds = saved_builds
+        .iter()
+        .enumerate()
+        .map(|(index, (name, build))| {
+            rsx!(BuildView {
+                b: build,
+                locale: locale,
+                set_saved_builds: set_saved_builds,
+                storage: storage,
+                name: name,
+                index: index
+            })
+        });
+    cx.render(rsx!(if saved_builds.is_empty() {
+        rsx!(
+            "No saved builds, you can save ones here "
+            a {
+                onclick: move |_| set_route(Route::Home),
+                span { class: "icon is-small mr-1",
+                    i { class: "fa-solid fa-magnifying-glass" }
+                }
+                span { [UiSymbole::Home.translate(locale)] }
+            }
+        )
+    } else {
+        rsx!(builds)
+    }))
+}
+
+#[inline_props] // can't use build as parameter name
+fn BuildView<'a>(
+    cx: Scope,
+    b: &'a Build,
+    locale: Locale,
+    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    storage: &'a Storage,
+    name: &'a str,
+    index: usize,
+) -> Element {
+    let locale = *locale;
+    let index = *index;
+    let b = *b;
+
+    let mut all_skills: Vec<(Skill, u8)> = b.get_all_skills_and_amounts().drain().collect();
+    all_skills.sort_unstable_by_key(|(_, amount)| *amount);
+
+    let delete_build = move |_| {
+        set_saved_builds.with_mut(|saved_builds| {
+            saved_builds.remove(index);
+            storage.builds().save(saved_builds)
+        })
+    };
+
+    cx.render(rsx!(article { class: "panel is-primary",
+        p { class: "message-header",
+            "{name}"
+            button {
+                class: "delete",
+                onclick: delete_build
+            }
+        }
+        BuildDetails { b: b, locale: locale }
+    }))
 }
