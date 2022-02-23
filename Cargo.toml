@@ -13,10 +13,23 @@ edition = "2021"
 rab-core = "0.4"
 dioxus = { version = "0.1", features = ["web"] }
 im-rc = { version = "15", features = ["serde"] }
-strum = "0.23"
-strum_macros = "0.23"
+strum = "0.24"
+strum_macros = "0.24"
 lexical-sort = "0.3"
 diacritics = "0.1"
 web-sys = { version = "0.3", features = ["Storage"] }
 ron = "0.7"
 serde = { version = "1", features = ["derive"] }
+
+[profile.release]
+lto = true
+
+[package.metadata.bundle]
+name = "RAB"
+identifier = "org.ityt.rab"
+version = "1.0.0"
+category = "Developer Tool"
+short_description = "Search armor sets for you"
+long_description = """
+You tell RAB what skills you want and it gives what sets you need
+"""

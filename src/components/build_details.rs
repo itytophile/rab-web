@@ -42,43 +42,25 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
         })
     });
 
+    let pieces = [
+        (b.helmet.as_ref(), "fa-solid fa-hat-cowboy"),
+        (b.chest.as_ref(), "fa-solid fa-shirt"),
+        (b.arm.as_ref(), "fa-solid fa-mitten"),
+        (b.waist.as_ref(), "fa-solid fa-archway"),
+        (b.leg.as_ref(), "fa-solid fa-socks"),
+        (b.talisman.as_ref(), "fa-solid fa-lightbulb"),
+    ]
+    .map(|(piece, icon)| {
+        rsx!(a { class: "panel-block",
+            span {class:"panel-icon", aria_hidden:"true",
+                i {class:"{icon}"}
+            }
+            [armor_to_string(piece, locale)]
+        })
+    });
+
     cx.render(rsx!(
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-hat-cowboy"}
-            }
-            [armor_to_string(b.helmet.as_ref(), locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-shirt"}
-            }
-            [armor_to_string(b.chest.as_ref(), locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-mitten"}
-            }
-            [armor_to_string(b.arm.as_ref(),locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-archway"}
-            }
-            [armor_to_string(b.waist.as_ref(),locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-socks"}
-            }
-            [armor_to_string(b.leg.as_ref(),locale)]
-        }
-        a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"fa-solid fa-lightbulb"}
-            }
-            [armor_to_string(b.talisman.as_ref(),locale)]
-        }
+        pieces
         div { class: "panel-block",
             button {
                 class: "button is-link is-outlined is-fullwidth",

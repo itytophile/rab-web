@@ -165,16 +165,15 @@ fn Navbar<'a>(
         ),
         (Route::Builds, "fa-solid fa-star", UiSymbole::MyBuilds),
     ]
-    .iter()
     .map(|(to_route, icon, label)| {
-        let class = if *to_route == route {
+        let class = if to_route == route {
             "button is-static"
         } else {
             "button"
         };
         rsx!(a {
             class: "{class}",
-            onclick: move |_| set_route(*to_route),
+            onclick: move |_| set_route(to_route),
             span { class: "icon is-small",
                 i { class: "{icon}" }
             }
