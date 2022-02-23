@@ -1,13 +1,15 @@
+mod de;
 pub mod en;
 mod fr;
 
-use self::{en::English, fr::French};
+use self::{de::German, en::English, fr::French};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, PartialEq, strum_macros::EnumIter, Serialize, Deserialize)]
 pub enum Locale {
     English,
     French,
+    German,
 }
 
 impl Locale {
@@ -15,6 +17,7 @@ impl Locale {
         match self {
             Locale::English => "English",
             Locale::French => "Français",
+            Locale::German => "Deutsch",
         }
     }
 }
@@ -35,11 +38,12 @@ pub enum UiSymbole {
     NoSavedBuilds,
 }
 
-pub trait Translation: English + French {
+pub trait Translation: English + French + German {
     fn translate(&self, locale: Locale) -> &'static str {
         match locale {
             Locale::English => self.to_english(),
             Locale::French => self.to_french(),
+            Locale::German => self.to_german(),
         }
     }
 }
