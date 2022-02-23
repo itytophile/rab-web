@@ -36,6 +36,8 @@ pub enum UiSymbole {
     Save,
     BuildsName,
     NoSavedBuilds,
+    Jewel,
+    Jewels,
 }
 
 pub trait Translation: English + French + German {

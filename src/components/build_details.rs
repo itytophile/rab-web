@@ -103,7 +103,17 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
             None
         } else {
             jewels_count
-                .map(|count| format!("{count} {}", if count == 1 { "jewel" } else { "jewels" }))
+                .map(|count| {
+                    format!(
+                        "{count} {}",
+                        if count == 1 {
+                            UiSymbole::Jewel
+                        } else {
+                            UiSymbole::Jewels
+                        }
+                        .translate(locale)
+                    )
+                })
                 .map(|count| {
                     rsx!(span { class: "is-italic has-text-grey-light ml-1",
                         "{count}"

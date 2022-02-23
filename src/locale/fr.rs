@@ -140,6 +140,8 @@ impl French for super::UiSymbole {
             Save => "Sauvegarder",
             BuildsName => "Nom de la panoplie",
             NoSavedBuilds => "Pas de panoplies sauvegardées, vous pouvez en faire ici ",
+            Jewel => "joyau",
+            Jewels => "joyaux",
         }
     }
 }
