@@ -1,11 +1,14 @@
 mod de;
 pub mod en;
+mod es;
 mod fr;
 mod it;
 mod pl;
 mod ru;
 
-use self::{de::German, en::English, fr::French, it::Italian, pl::Polish, ru::Russian};
+use self::{
+    de::German, en::English, es::Spanish, fr::French, it::Italian, pl::Polish, ru::Russian,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, PartialEq, strum_macros::EnumIter, Serialize, Deserialize)]
@@ -16,6 +19,7 @@ pub enum Locale {
     Italian,
     Polish,
     Russian,
+    Spanish,
 }
 
 impl Locale {
@@ -27,6 +31,7 @@ impl Locale {
             Locale::Italian => "Italiano",
             Locale::Polish => "Polski",
             Locale::Russian => "Русский",
+            Locale::Spanish => "Español",
         }
     }
 }
@@ -49,7 +54,7 @@ pub enum UiSymbole {
     Jewels,
 }
 
-pub trait Translation: English + French + German + Italian + Polish + Russian {
+pub trait Translation: English + French + German + Italian + Polish + Russian + Spanish {
     fn translate(&self, locale: Locale) -> &'static str {
         match locale {
             Locale::English => self.to_english(),
@@ -58,6 +63,7 @@ pub trait Translation: English + French + German + Italian + Polish + Russian {
             Locale::Italian => self.to_italian(),
             Locale::Polish => self.to_polish(),
             Locale::Russian => self.to_russian(),
+            Locale::Spanish => self.to_spanish(),
         }
     }
 }
