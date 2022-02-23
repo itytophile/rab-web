@@ -93,7 +93,7 @@ fn BuildView<'a>(
         })
     };
 
-    cx.render(rsx!(article { class: "panel is-primary",
+    cx.render(rsx!(article { class: "panel is-info",
         p { class: "message-header",
             "{name}"
             button {

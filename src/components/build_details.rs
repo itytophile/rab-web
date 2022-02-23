@@ -43,20 +43,85 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
     });
 
     let pieces = [
-        (b.helmet.as_ref(), "fa-solid fa-hat-cowboy"),
-        (b.chest.as_ref(), "fa-solid fa-shirt"),
-        (b.arm.as_ref(), "fa-solid fa-mitten"),
-        (b.waist.as_ref(), "fa-solid fa-archway"),
-        (b.leg.as_ref(), "fa-solid fa-socks"),
-        (b.talisman.as_ref(), "fa-solid fa-lightbulb"),
+        (
+            b.helmet.as_ref(),
+            "fa-solid fa-hat-cowboy",
+            use_state(&cx, || false),
+        ),
+        (
+            b.chest.as_ref(),
+            "fa-solid fa-shirt",
+            use_state(&cx, || false),
+        ),
+        (
+            b.arm.as_ref(),
+            "fa-solid fa-mitten",
+            use_state(&cx, || false),
+        ),
+        (
+            b.waist.as_ref(),
+            "fa-solid fa-archway",
+            use_state(&cx, || false),
+        ),
+        (
+            b.leg.as_ref(),
+            "fa-solid fa-socks",
+            use_state(&cx, || false),
+        ),
+        (
+            b.talisman.as_ref(),
+            "fa-solid fa-lightbulb",
+            use_state(&cx, || false),
+        ),
     ]
-    .map(|(piece, icon)| {
-        rsx!(a { class: "panel-block",
-            span {class:"panel-icon", aria_hidden:"true",
-                i {class:"{icon}"}
+    .map(|(piece, icon, (is_expanded, set_is_expanded))| {
+        let panel_class = if *is_expanded {
+            "panel-block is-active"
+        } else {
+            "panel-block"
+        };
+        let expansion = if *is_expanded {
+            if let Some((_, skills)) = piece {
+                Some(rsx!(skills.iter().flatten().map(
+                    |skill| rsx!(div { class: "panel-block",
+                        span {class:"panel-icon ml-5",
+                            i {class:"fa-solid fa-gem"}
+                        }
+                        [DisplaySkill(*skill).translate(locale)]
+                    })
+                )))
+            } else {
+                None
             }
-            [armor_to_string(piece, locale)]
-        })
+        } else {
+            None
+        };
+
+        let jewels_count = piece.map(|(_, skills)| skills.iter().flatten().count());
+
+        let jewels_count = if jewels_count == Some(0) {
+            None
+        } else {
+            jewels_count
+                .map(|count| format!("{count} {}", if count == 1 { "jewel" } else { "jewels" }))
+                .map(|count| {
+                    rsx!(span { class: "is-italic has-text-grey-light ml-1",
+                        "{count}"
+                    })
+                })
+        };
+
+        rsx!(
+            a { class: "{panel_class}", onclick: |_| *set_is_expanded.make_mut() ^= true,
+                span {class:"panel-icon",
+                    i {class:"{icon}"}
+                }
+                [armor_to_string(piece, locale)]
+                jewels_count
+
+            }
+            expansion
+        )
     });
 
     cx.render(rsx!(

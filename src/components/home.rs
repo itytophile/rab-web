@@ -170,7 +170,7 @@ fn BuildView<'a>(
 
     let save_disabled = build_name.is_empty();
 
-    cx.render(rsx!(article { class: "panel is-primary",
+    cx.render(rsx!(article { class: "panel is-info",
         p { class: "panel-heading" }
         div { class: "panel-block",
             div { class: "field has-addons is-expanded is-flex-grow-1",
