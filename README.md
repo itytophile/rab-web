@@ -15,3 +15,9 @@ cargo install trunk
 ```
 trunk serve
 ```
+
+## Build
+
+```
+trunk build --release --public-url /rab/
+```
