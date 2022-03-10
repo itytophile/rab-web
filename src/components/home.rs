@@ -16,25 +16,24 @@ use web_sys::Storage;
 pub(crate) fn Home<'a>(
     cx: Scope,
     locale: Locale,
-    set_wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     talismans: &'a im_rc::Vector<Talisman>,
-    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
     storage: &'a Storage,
 ) -> Element {
-    let wishes = set_wishes.get().as_ref();
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: im_rc::HashSet<DisplaySkill> =
         all_skills.difference(wishes.iter().map(|(skill, _)| *skill).collect());
-    let (builds, set_builds) = use_state(&cx, Vec::<Build>::new);
-    let (gender, set_gender) = use_state(&cx, Gender::default);
-    let (weapon_slots, set_weapon_slots) = use_state(&cx, || [0u8; 3]);
+    let builds = use_state(&cx, Vec::<Build>::new);
+    let gender = use_state(&cx, Gender::default);
+    let weapon_slots = use_state(&cx, || [0u8; 3]);
 
     let rows = wishes.iter().enumerate().map(|(index, (skill, amount))| {
         rsx! {
             div { class: "field has-addons",
                 SkillRow {
-                    set_skills: set_wishes,
+                    skills: wishes,
                     index: index,
                     skill: *skill,
                     amount: *amount,
@@ -45,11 +44,11 @@ pub(crate) fn Home<'a>(
     });
 
     let toggle_gender = move |_| {
-        if gender == &Gender::Female {
-            set_gender(Gender::Male);
+        gender.set(if gender == &Gender::Female {
+            Gender::Male
         } else {
-            set_gender(Gender::Female);
-        }
+            Gender::Female
+        })
     };
 
     let icon_button = if gender == &Gender::Female {
@@ -61,7 +60,7 @@ pub(crate) fn Home<'a>(
     let search_is_disabled = wishes.is_empty();
 
     let search_builds = move |_| {
-        set_builds(pre_selection_then_brute_force_search(
+        builds.set(pre_selection_then_brute_force_search(
             wishes
                 .iter()
                 .map(|(skill, amount)| (skill.0, *amount))
@@ -75,8 +74,8 @@ pub(crate) fn Home<'a>(
                 talismans: &talismans.iter().map(Into::into).collect::<Vec<Armor>>(),
                 waists: &WAISTS.iter().map(Into::into).collect::<Vec<Armor>>(),
             },
-            *gender,
-            *weapon_slots,
+            **gender,
+            **weapon_slots,
         ));
     };
 
@@ -84,14 +83,14 @@ pub(crate) fn Home<'a>(
         rsx! {BuildView {
             b: build,
             locale: *locale,
-            set_saved_builds: set_saved_builds,
+            saved_builds: saved_builds,
             storage: storage
         }}
     });
 
     let weapon_slot_buttons = weapon_slots.iter().enumerate().map(|(index, value)| {
         rsx!(SlotButton {
-            set_slots: set_weapon_slots
+            slots: weapon_slots
             value: *value
             index: index
         })
@@ -103,7 +102,7 @@ pub(crate) fn Home<'a>(
                 div { class: "field is-grouped",
                     AddSkill {
                         options: available_skills,
-                        set_skills: set_wishes,
+                        skills: wishes,
                         locale: *locale
                     }
                     div { class: "control",
@@ -148,10 +147,10 @@ fn BuildView<'a>(
     cx: Scope,
     b: &'a Build,
     locale: Locale,
-    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
     storage: &'a Storage,
 ) -> Element {
-    let (build_name, set_build_name) = use_state(&cx, String::new);
+    let build_name = use_state(&cx, String::new);
     let locale = *locale;
     let b = *b;
 
@@ -161,11 +160,11 @@ fn BuildView<'a>(
     let placeholder = UiSymbole::BuildsName.translate(locale);
 
     let save_build = |_| {
-        set_saved_builds.with_mut(|builds| {
-            builds.push_back((build_name.clone(), b.clone()));
+        saved_builds.with_mut(|builds| {
+            builds.push_back((build_name.to_string(), b.clone()));
             storage.builds().save(builds);
         });
-        set_build_name(String::new());
+        build_name.set(String::new());
     };
 
     let save_disabled = build_name.is_empty();
@@ -179,7 +178,7 @@ fn BuildView<'a>(
                         class: "input",
                         r#type: "text",
                         placeholder: "{placeholder}",
-                        oninput: |event| set_build_name(event.value.clone())
+                        oninput: |event| build_name.set(event.value.clone())
                     }
                 }
                 div { class: "control",

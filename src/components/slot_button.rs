@@ -1,16 +1,11 @@
 use dioxus::prelude::*;
 
 #[inline_props]
-pub fn SlotButton<'a>(
-    cx: Scope,
-    set_slots: &'a UseState<[u8; 3]>,
-    value: u8,
-    index: usize,
-) -> Element {
+pub fn SlotButton<'a>(cx: Scope, slots: &'a UseState<[u8; 3]>, value: u8, index: usize) -> Element {
     let index = *index;
 
     let increment = move |_| {
-        set_slots.make_mut()[index] = (value + 1) % 4;
+        slots.make_mut()[index] = (value + 1) % 4;
     };
 
     cx.render(rsx!(div { class: "control",

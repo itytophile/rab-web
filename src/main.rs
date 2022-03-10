@@ -65,45 +65,42 @@ enum Route {
 }
 
 fn app(cx: Scope) -> Element {
-    let (storage, _) = use_state(&cx, || {
+    let storage = use_state(&cx, || {
         web_sys::window().unwrap().local_storage().unwrap().unwrap()
     });
-    let (locale, set_locale) = use_state(&cx, || storage.locale().get().unwrap_or(Locale::English));
-    let (route, set_route) = use_state(&cx, || Route::Home);
-    let (_, set_skills) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
-    let (_, set_wishes) = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
-    let (talismans, set_talismans) =
-        use_state(&cx, || storage.talismans().get().unwrap_or_default());
-    let (_, set_saved_builds) = use_state(&cx, || storage.builds().get().unwrap_or_default());
+    let locale = use_state(&cx, || storage.locale().get().unwrap_or(Locale::English));
+    let route = use_state(&cx, || Route::Home);
+    let skills = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
+    let wishes = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
+    let talismans = use_state(&cx, || storage.talismans().get().unwrap_or_default());
+    let saved_builds = use_state(&cx, || storage.builds().get().unwrap_or_default());
 
-    let locale = *locale;
-
-    let routes = match route {
+    let routes = match **route {
         Route::Home => rsx!(Home {
-            locale: locale,
-            set_wishes: set_wishes,
+            locale: **locale,
+            wishes: wishes,
             talismans: talismans,
-            set_saved_builds: set_saved_builds,
+            saved_builds: saved_builds,
             storage: storage
         }),
         Route::Talismans => rsx!(Talismans {
-            locale: locale,
-            set_skills: set_skills,
-            set_talismans: set_talismans,
+            locale: **locale,
+            skills: skills,
+            talismans: talismans,
             storage: storage
         }),
         Route::Builds => rsx!(Builds {
-            set_saved_builds: set_saved_builds,
+            saved_builds: saved_builds,
             storage: storage,
-            locale: locale,
-            set_route: set_route
+            locale: **locale,
+            route: route
         }),
     };
 
     cx.render(rsx!(
     Navbar {
-        set_locale: set_locale,
-        set_route: set_route,
+        locale: locale,
+        route: route,
         storage: storage
     }
     section { class: "section",
@@ -116,33 +113,30 @@ fn app(cx: Scope) -> Element {
 #[inline_props]
 fn Navbar<'a>(
     cx: Scope,
-    set_locale: &'a UseState<Locale>,
-    set_route: &'a UseState<Route>,
+    locale: &'a UseState<Locale>,
+    route: &'a UseState<Route>,
     storage: &'a Storage,
 ) -> Element {
-    let (is_dropdown_active, set_is_dropdown_active) = use_state(&cx, || false);
-    let (is_active, set_is_active) = use_state(&cx, || false);
+    let is_dropdown_active = use_state(&cx, || false);
+    let is_active = use_state(&cx, || false);
 
-    let class_dropdown = if *is_dropdown_active {
+    let class_dropdown = if **is_dropdown_active {
         "dropdown is-active"
     } else {
         "dropdown"
     };
 
-    let locales = Locale::iter().map(|locale| {
+    let locales = Locale::iter().map(|loc| {
         cx.render(rsx!(a {
             class:"dropdown-item",
             onclick: move |_| {
-                set_locale(locale);
-                set_is_dropdown_active(false);
-                storage.locale().save(&locale)
+                locale.set(loc);
+                is_dropdown_active.set(false);
+                storage.locale().save(&loc)
             },
-            [locale.native()]
+            [loc.native()]
         }))
     });
-
-    let locale = **set_locale.get();
-    let route = **set_route.get();
 
     let spans = (0..3).map(|_| {
         rsx!(span {
@@ -150,7 +144,7 @@ fn Navbar<'a>(
         })
     });
 
-    let (burger_class, menu_class) = if *is_active {
+    let (burger_class, menu_class) = if **is_active {
         ("navbar-burger is-active", "navbar-menu is-active")
     } else {
         ("navbar-burger", "navbar-menu")
@@ -166,18 +160,18 @@ fn Navbar<'a>(
         (Route::Builds, "fa-solid fa-star", UiSymbole::MyBuilds),
     ]
     .map(|(to_route, icon, label)| {
-        let class = if to_route == route {
+        let class = if to_route == ***route {
             "button is-static"
         } else {
             "button"
         };
         rsx!(a {
             class: "{class}",
-            onclick: move |_| set_route(to_route),
+            onclick: move |_| route.set(to_route),
             span { class: "icon is-small",
                 i { class: "{icon}" }
             }
-            span { [label.translate(locale)] }
+            span { [label.translate(***locale)] }
         })
     });
 
@@ -187,7 +181,7 @@ fn Navbar<'a>(
                 div { class: "navbar-item",
                     div { class: "{class_dropdown}",
                         div { class: "dropdown-trigger",
-                            a { class: "button", onclick: |_| *set_is_dropdown_active.make_mut() ^= true,
+                            a { class: "button", onclick: |_| *is_dropdown_active.make_mut() ^= true,
                                 span { class: "icon is-small",
                                     i { class: "fa-solid fa-globe" }
                                 }
@@ -203,7 +197,7 @@ fn Navbar<'a>(
                 a {
                     role: "button",
                     class: "{burger_class}",
-                    onclick: |_| *set_is_active.make_mut() ^= true,
+                    onclick: |_| *is_active.make_mut() ^= true,
                     spans
                 }
             }

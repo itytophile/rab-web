@@ -11,13 +11,12 @@ use web_sys::Storage;
 #[inline_props]
 pub(crate) fn Builds<'a>(
     cx: Scope,
-    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
     storage: &'a Storage,
     locale: Locale,
-    set_route: &'a UseState<Route>,
+    route: &'a UseState<Route>,
 ) -> Element {
     let locale = *locale;
-    let saved_builds = set_saved_builds.get();
     let builds = saved_builds
         .iter()
         .take(saved_builds.len() / 2)
@@ -26,7 +25,7 @@ pub(crate) fn Builds<'a>(
             rsx!(BuildView {
                 b: build,
                 locale: locale,
-                set_saved_builds: set_saved_builds,
+                saved_builds: saved_builds,
                 storage: storage,
                 name: name,
                 index: index
@@ -40,7 +39,7 @@ pub(crate) fn Builds<'a>(
             rsx!(BuildView {
                 b: build,
                 locale: locale,
-                set_saved_builds: set_saved_builds,
+                saved_builds: saved_builds,
                 storage: storage,
                 name: name,
                 index: index
@@ -50,7 +49,7 @@ pub(crate) fn Builds<'a>(
         rsx!(
             [UiSymbole::NoSavedBuilds.translate(locale)]
             a {
-                onclick: move |_| set_route(Route::Home),
+                onclick: move |_| route.set(Route::Home),
                 span { class: "icon is-small mr-1",
                     i { class: "fa-solid fa-magnifying-glass" }
                 }
@@ -74,7 +73,7 @@ fn BuildView<'a>(
     cx: Scope,
     b: &'a Build,
     locale: Locale,
-    set_saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
+    saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
     storage: &'a Storage,
     name: &'a str,
     index: usize,
@@ -87,7 +86,7 @@ fn BuildView<'a>(
     all_skills.sort_unstable_by_key(|(_, amount)| *amount);
 
     let delete_build = move |_| {
-        set_saved_builds.with_mut(|saved_builds| {
+        saved_builds.with_mut(|saved_builds| {
             saved_builds.remove(index);
             storage.builds().save(saved_builds)
         })

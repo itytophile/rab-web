@@ -8,7 +8,7 @@ use crate::{
 #[inline_props]
 pub(crate) fn SkillRow<'a>(
     cx: Scope,
-    set_skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     index: usize,
     skill: DisplaySkill,
     amount: u8,
@@ -20,12 +20,12 @@ pub(crate) fn SkillRow<'a>(
     let is_plus_disabled = amount == skill.get_limit();
 
     let remove_skill = move |_| {
-        set_skills.make_mut().remove(index);
+        skills.make_mut().remove(index);
     };
 
-    let increment = move |_| set_skills.make_mut()[index] = (skill, amount + 1);
+    let increment = move |_| skills.make_mut()[index] = (skill, amount + 1);
 
-    let decrement = move |_| set_skills.make_mut()[index] = (skill, amount - 1);
+    let decrement = move |_| skills.make_mut()[index] = (skill, amount - 1);
 
     let skill = skill.translate(*locale);
 

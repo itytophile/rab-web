@@ -11,25 +11,22 @@ use web_sys::Storage;
 #[inline_props]
 pub(crate) fn Talismans<'a>(
     cx: Scope,
-    set_skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     locale: Locale,
-    set_talismans: &'a UseState<im_rc::Vector<Talisman>>,
+    talismans: &'a UseState<im_rc::Vector<Talisman>>,
     storage: &'a Storage,
 ) -> Element {
-    let skills = set_skills.get().as_ref();
-    let talismans = set_talismans.get().as_ref();
-
     let locale = *locale;
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: im_rc::HashSet<DisplaySkill> =
         all_skills.difference(skills.iter().map(|(skill, _)| *skill).collect());
-    let (talisman_slots, set_talisman_slots) = use_state(&cx, || [0u8; 3]);
-    let (talisman_name, set_talisman_name) = use_state(&cx, String::new);
+    let talisman_slots = use_state(&cx, || [0u8; 3]);
+    let talisman_name = use_state(&cx, String::new);
 
     let weapon_slot_buttons = talisman_slots.iter().enumerate().map(|(index, value)| {
         rsx!(SlotButton {
-            set_slots: set_talisman_slots
+            slots: talisman_slots
             value: *value
             index: index
         })
@@ -41,7 +38,7 @@ pub(crate) fn Talismans<'a>(
         rsx! {
             div { class: "field has-addons",
                 SkillRow {
-                    set_skills: set_skills,
+                    skills: skills,
                     index: index,
                     skill: *skill,
                     amount: *amount,
@@ -54,9 +51,9 @@ pub(crate) fn Talismans<'a>(
     let placeholder = UiSymbole::TalismansName.translate(locale);
 
     let save_talisman = |_| {
-        set_talismans.with_mut(|talismans| {
+        talismans.with_mut(|talismans| {
             talismans.push_back(Talisman {
-                name: talisman_name.clone(),
+                name: talisman_name.to_string(),
                 skills: skills
                     .iter()
                     .map(|&(skill, amount)| (*skill, amount))
@@ -69,16 +66,16 @@ pub(crate) fn Talismans<'a>(
             });
             storage.talismans().save(talismans);
         });
-        set_talisman_name(String::new());
-        set_skills(im_rc::Vector::new());
-        set_talisman_slots(Default::default())
+        talisman_name.set(String::new());
+        skills.set(im_rc::Vector::new());
+        talisman_slots.set(Default::default())
     };
 
     let talisman_views = talismans.iter().enumerate().map(|(index, talisman)| {
         rsx!(TalismanView {
             talisman: talisman,
             locale: locale,
-            set_talismans: set_talismans,
+            talismans: talismans,
             index: index,
             storage: storage
         })
@@ -90,7 +87,7 @@ pub(crate) fn Talismans<'a>(
                 div { class: "field is-grouped",
                     AddSkill {
                         options: available_skills,
-                        set_skills: set_skills,
+                        skills: skills,
                         locale: locale
                     }
                     div {class: "field has-addons",
@@ -99,7 +96,7 @@ pub(crate) fn Talismans<'a>(
                                 class: "input",
                                 r#type: "text",
                                 placeholder: "{placeholder}",
-                                oninput: |event| set_talisman_name(event.value.clone())
+                                oninput: |event| talisman_name.set(event.value.clone())
                             }
                         }
                         div { class: "control",
@@ -138,7 +135,7 @@ fn TalismanView<'a>(
     cx: Scope,
     talisman: &'a Talisman,
     locale: Locale,
-    set_talismans: &'a UseState<im_rc::Vector<Talisman>>,
+    talismans: &'a UseState<im_rc::Vector<Talisman>>,
     index: usize,
     storage: &'a Storage,
 ) -> Element {
@@ -166,7 +163,7 @@ fn TalismanView<'a>(
     });
 
     let delete_talisman = |_| {
-        set_talismans.with_mut(|talismans| {
+        talismans.with_mut(|talismans| {
             talismans.remove(*index);
             storage.talismans().save(talismans)
         })

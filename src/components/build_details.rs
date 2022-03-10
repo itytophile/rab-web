@@ -24,7 +24,7 @@ fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) 
 
 #[inline_props] // can't use build as parameter name
 pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
-    let (visible, set_visible) = use_state(&cx, || false);
+    let visible = use_state(&cx, || false);
     let locale = *locale;
     let b = *b;
 
@@ -74,13 +74,13 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
             use_state(&cx, || false),
         ),
     ]
-    .map(|(piece, icon, (is_expanded, set_is_expanded))| {
-        let panel_class = if *is_expanded {
+    .map(|(piece, icon, is_expanded)| {
+        let panel_class = if **is_expanded {
             "panel-block is-active"
         } else {
             "panel-block"
         };
-        let expansion = if *is_expanded {
+        let expansion = if **is_expanded {
             if let Some((_, skills)) = piece {
                 Some(rsx!(skills.iter().flatten().map(
                     |skill| rsx!(div { class: "panel-block",
@@ -122,7 +122,7 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
         };
 
         rsx!(
-            a { class: "{panel_class}", onclick: |_| *set_is_expanded.make_mut() ^= true,
+            a { class: "{panel_class}", onclick: |_| *is_expanded.make_mut() ^= true,
                 span {class:"panel-icon",
                     i {class:"{icon}"}
                 }
@@ -139,8 +139,8 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
         div { class: "panel-block",
             button {
                 class: "button is-link is-outlined is-fullwidth",
-                onclick: |_| *set_visible.make_mut() ^= true,
-                [if *visible { UiSymbole::HideSkills } else { UiSymbole::ShowSkills }.translate(locale)]
+                onclick: |_| *visible.make_mut() ^= true,
+                [if **visible { UiSymbole::HideSkills } else { UiSymbole::ShowSkills }.translate(locale)]
             }
         }
         visible.then(|| rsx!(skills))

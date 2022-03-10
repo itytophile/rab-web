@@ -11,14 +11,14 @@ use crate::{
 pub(crate) fn AddSkill<'a>(
     cx: Scope,
     options: im_rc::HashSet<DisplaySkill>,
-    set_skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     locale: Locale,
 ) -> Element {
-    let (is_active, set_is_active) = use_state(&cx, || false);
+    let is_active = use_state(&cx, || false);
 
     cx.render(rsx! {
         div { class: "control",
-            button { class: "button is-primary", onclick: |_| set_is_active(true),
+            button { class: "button is-primary", onclick: |_| is_active.set(true),
                 span { class: "icon is-small",
                     i { class: "fa-solid fa-pepper-hot" }
                 },
@@ -27,9 +27,8 @@ pub(crate) fn AddSkill<'a>(
         }
         SelectWish {
             options: options,
-            set_wishes: set_skills,
-            is_active: *is_active,
-            set_is_active: set_is_active,
+            wishes: skills,
+            is_active: is_active,
             locale: *locale
         },
     })
@@ -39,15 +38,14 @@ pub(crate) fn AddSkill<'a>(
 fn SelectWish<'a>(
     cx: Scope,
     options: &'a im_rc::HashSet<DisplaySkill>,
-    set_wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
-    is_active: bool,
-    set_is_active: &'a UseState<bool>,
+    wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    is_active: &'a UseState<bool>,
     locale: Locale,
 ) -> Element {
     // always lowercase
-    let (filter, set_filter) = use_state(&cx, String::new);
+    let filter = use_state(&cx, String::new);
 
-    let class = if *is_active {
+    let class = if ***is_active {
         "modal is-active"
     } else {
         "modal"
@@ -55,8 +53,8 @@ fn SelectWish<'a>(
 
     let on_select = |skill| {
         move |_| {
-            set_wishes.make_mut().push_back((skill, 1));
-            set_is_active(false)
+            wishes.make_mut().push_back((skill, 1));
+            is_active.set(false)
         }
     };
 
@@ -83,7 +81,8 @@ fn SelectWish<'a>(
         let text = match locale {
             Locale::English => cx.render(rsx! { [skill.to_english()] }),
             _ => {
-                if !filter.is_empty() && skill.to_english().to_lowercase().contains(filter) {
+                if !filter.is_empty() && skill.to_english().to_lowercase().contains(filter.as_str())
+                {
                     cx.render(rsx! {
                         [skill.translate(locale)]
                         span { class: "is-italic has-text-grey-light ml-1",
@@ -108,7 +107,7 @@ fn SelectWish<'a>(
 
     cx.render(rsx! {
         div { class: "{class}",
-            div { class: "modal-background", onclick: |_| set_is_active(false) }
+            div { class: "modal-background", onclick: |_| is_active.set(false) }
             div { class: "modal-card",
                 header { class: "modal-card-head",
                     div { class: "modal-card-title mr-5",
@@ -117,14 +116,14 @@ fn SelectWish<'a>(
                                 class: "input is-fullwidth",
                                 r#type: "text",
                                 placeholder: "{placeholder}",
-                                oninput: |event| set_filter(event.value.to_lowercase())
+                                oninput: |event| filter.set(event.value.to_lowercase())
                             }
                             span { class: "icon is-left",
                                 i { class: "fas fa-search" }
                             }
                         }
                     },
-                    button { class: "delete", onclick: |_| set_is_active(false) }
+                    button { class: "delete", onclick: |_| is_active.set(false) }
                 }
                 div { class: "modal-card-body",
                     options
