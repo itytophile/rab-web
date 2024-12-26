@@ -13,12 +13,12 @@ edition = "2021"
 rab-core = "0.4"
 dioxus = { version = "0.2", features = ["web"] }
 im-rc = { version = "15", features = ["serde"] }
-strum = "0.24"
-strum_macros = "0.24"
+strum = "0.26"
+strum_macros = "0.26"
 lexical-sort = "0.3"
-diacritics = "0.1"
+diacritics = "0.2"
 web-sys = { version = "0.3", features = ["Storage"] }
-ron = "0.7"
+ron = "0.8"
 serde = { version = "1", features = ["derive"] }
 
 [profile.release]
