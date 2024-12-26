@@ -13,7 +13,7 @@ pub(crate) fn AddSkill<'a>(
     options: im_rc::HashSet<DisplaySkill>,
     skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     locale: Locale,
-) -> Element {
+) -> Element<'a> {
     let is_active = use_state(&cx, || false);
 
     cx.render(rsx! {
@@ -41,7 +41,7 @@ fn SelectWish<'a>(
     wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
     is_active: &'a UseState<bool>,
     locale: Locale,
-) -> Element {
+) -> Element<'a> {
     // always lowercase
     let filter = use_state(&cx, String::new);
 

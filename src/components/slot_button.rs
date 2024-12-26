@@ -1,7 +1,12 @@
 use dioxus::prelude::*;
 
 #[inline_props]
-pub fn SlotButton<'a>(cx: Scope, slots: &'a UseState<[u8; 3]>, value: u8, index: usize) -> Element {
+pub fn SlotButton<'a>(
+    cx: Scope,
+    slots: &'a UseState<[u8; 3]>,
+    value: u8,
+    index: usize,
+) -> Element<'a> {
     let index = *index;
 
     let increment = move |_| {

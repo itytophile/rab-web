@@ -13,7 +13,7 @@ pub(crate) fn SkillRow<'a>(
     skill: DisplaySkill,
     amount: u8,
     locale: Locale,
-) -> Element {
+) -> Element<'a> {
     let (index, skill, amount) = (*index, *skill, *amount);
 
     let is_minus_disabled = amount == 1;

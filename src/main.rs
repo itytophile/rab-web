@@ -116,7 +116,7 @@ fn Navbar<'a>(
     locale: &'a UseState<Locale>,
     route: &'a UseState<Route>,
     storage: &'a Storage,
-) -> Element {
+) -> Element<'a> {
     let is_dropdown_active = use_state(&cx, || false);
     let is_active = use_state(&cx, || false);
 

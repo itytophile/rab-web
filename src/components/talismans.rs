@@ -15,7 +15,7 @@ pub(crate) fn Talismans<'a>(
     locale: Locale,
     talismans: &'a UseState<im_rc::Vector<Talisman>>,
     storage: &'a Storage,
-) -> Element {
+) -> Element<'a> {
     let locale = *locale;
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
@@ -138,17 +138,17 @@ fn TalismanView<'a>(
     talismans: &'a UseState<im_rc::Vector<Talisman>>,
     index: usize,
     storage: &'a Storage,
-) -> Element {
+) -> Element<'a> {
     let locale = *locale;
 
     let slots = if talisman.slots.is_empty() {
         UiSymbole::NoSlots.translate(locale).to_owned()
     } else {
-        talisman
-            .slots
-            .iter()
-            .map(|slot| format!("x{slot} "))
-            .collect()
+        let mut slots = String::new();
+        for slot in &talisman.slots {
+            slots.push_str(&format!("x{slot} "));
+        }
+        slots
     };
 
     let skills = talisman.skills.iter().map(|(skill, amount)| {

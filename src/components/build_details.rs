@@ -23,7 +23,7 @@ fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) 
 }
 
 #[inline_props] // can't use build as parameter name
-pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element {
+pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element<'a> {
     let visible = use_state(&cx, || false);
     let locale = *locale;
     let b = *b;

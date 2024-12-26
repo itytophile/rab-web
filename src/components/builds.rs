@@ -15,7 +15,7 @@ pub(crate) fn Builds<'a>(
     storage: &'a Storage,
     locale: Locale,
     route: &'a UseState<Route>,
-) -> Element {
+) -> Element<'a> {
     let locale = *locale;
     let builds = saved_builds
         .iter()
@@ -77,7 +77,7 @@ fn BuildView<'a>(
     storage: &'a Storage,
     name: &'a str,
     index: usize,
-) -> Element {
+) -> Element<'a> {
     let locale = *locale;
     let index = *index;
     let b = *b;

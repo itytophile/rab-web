@@ -20,7 +20,7 @@ pub(crate) fn Home<'a>(
     talismans: &'a im_rc::Vector<Talisman>,
     saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
     storage: &'a Storage,
-) -> Element {
+) -> Element<'a> {
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: im_rc::HashSet<DisplaySkill> =
@@ -149,7 +149,7 @@ fn BuildView<'a>(
     locale: Locale,
     saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
     storage: &'a Storage,
-) -> Element {
+) -> Element<'a> {
     let build_name = use_state(&cx, String::new);
     let locale = *locale;
     let b = *b;
