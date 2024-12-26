@@ -24,6 +24,16 @@ serde = { version = "1", features = ["derive"] }
 [profile.release]
 lto = true
 
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"
+
 [package.metadata.bundle]
 name = "RAB"
 identifier = "org.ityt.rab"
