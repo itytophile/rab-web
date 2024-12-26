@@ -22,11 +22,10 @@ fn armor_to_string(armor: Option<&(Armor, [Option<Skill>; 3])>, locale: Locale) 
     }
 }
 
-#[inline_props] // can't use build as parameter name
-pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Element<'a> {
-    let visible = use_state(&cx, || false);
-    let locale = *locale;
-    let b = *b;
+#[component] // can't use build as parameter name
+pub(crate) fn BuildDetails(b: ReadOnlySignal<Build>, locale: Locale) -> Element {
+    let mut visible = use_signal(|| false);
+    let b = b.read();
 
     let mut all_skills: Vec<(Skill, u8)> = b.get_all_skills_and_amounts().drain().collect();
     all_skills.sort_unstable_by_key(|(_, amount)| *amount);
@@ -37,7 +36,7 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
             span {class:"panel-icon", aria_hidden:"true",
                 i {class:"fa-solid fa-pepper-hot"}
             }
-            [DisplaySkill(*skill).translate(locale)]
+            {DisplaySkill(*skill).translate(locale)}
             "{amount}"
         })
     });
@@ -46,50 +45,39 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
         (
             b.helmet.as_ref(),
             "fa-solid fa-hat-cowboy",
-            use_state(&cx, || false),
+            use_signal(|| false),
         ),
-        (
-            b.chest.as_ref(),
-            "fa-solid fa-shirt",
-            use_state(&cx, || false),
-        ),
-        (
-            b.arm.as_ref(),
-            "fa-solid fa-mitten",
-            use_state(&cx, || false),
-        ),
+        (b.chest.as_ref(), "fa-solid fa-shirt", use_signal(|| false)),
+        (b.arm.as_ref(), "fa-solid fa-mitten", use_signal(|| false)),
         (
             b.waist.as_ref(),
             "fa-solid fa-archway",
-            use_state(&cx, || false),
+            use_signal(|| false),
         ),
-        (
-            b.leg.as_ref(),
-            "fa-solid fa-socks",
-            use_state(&cx, || false),
-        ),
+        (b.leg.as_ref(), "fa-solid fa-socks", use_signal(|| false)),
         (
             b.talisman.as_ref(),
             "fa-solid fa-lightbulb",
-            use_state(&cx, || false),
+            use_signal(|| false),
         ),
     ]
-    .map(|(piece, icon, is_expanded)| {
-        let panel_class = if **is_expanded {
+    .into_iter()
+    .map(|(piece, icon, mut is_expanded)| {
+        let panel_class = if *is_expanded.read() {
             "panel-block is-active"
         } else {
             "panel-block"
         };
-        let expansion = if **is_expanded {
+        let expansion = if *is_expanded.read() {
             if let Some((_, skills)) = piece {
-                Some(rsx!(skills.iter().flatten().map(
+                Some(rsx! {{skills.iter().flatten().map(
                     |skill| rsx!(div { class: "panel-block",
                         span {class:"panel-icon ml-5",
                             i {class:"fa-solid fa-gem"}
                         }
-                        [DisplaySkill(*skill).translate(locale)]
+                        {DisplaySkill(*skill).translate(locale)}
                     })
-                )))
+                )}})
             } else {
                 None
             }
@@ -122,27 +110,27 @@ pub(crate) fn BuildDetails<'a>(cx: Scope, b: &'a Build, locale: Locale) -> Eleme
         };
 
         rsx!(
-            a { class: "{panel_class}", onclick: |_| *is_expanded.make_mut() ^= true,
+            a { class: "{panel_class}", onclick: move |_| *is_expanded.write() ^= true,
                 span {class:"panel-icon",
                     i {class:"{icon}"}
                 }
-                [armor_to_string(piece, locale)]
-                jewels_count
+                {armor_to_string(piece, locale)}
+                {jewels_count}
 
             }
-            expansion
+            {expansion}
         )
     });
 
-    cx.render(rsx!(
-        pieces
+    rsx!(
+        {pieces}
         div { class: "panel-block",
             button {
                 class: "button is-link is-outlined is-fullwidth",
-                onclick: |_| *visible.make_mut() ^= true,
-                [if **visible { UiSymbole::HideSkills } else { UiSymbole::ShowSkills }.translate(locale)]
+                onclick: move |_| *visible.write() ^= true,
+                {if *visible.read() { UiSymbole::HideSkills } else { UiSymbole::ShowSkills }.translate(locale)}
             }
         }
-        visible.then(|| rsx!(skills))
-    ))
+        {visible.read().then(|| rsx!({skills}))}
+    )
 }

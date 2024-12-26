@@ -12,24 +12,25 @@ use rab_core::{
 };
 use web_sys::Storage;
 
-#[inline_props]
-pub(crate) fn Home<'a>(
-    cx: Scope,
+#[component]
+pub(crate) fn Home(
     locale: Locale,
-    wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
-    talismans: &'a im_rc::Vector<Talisman>,
-    saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
-    storage: &'a Storage,
-) -> Element<'a> {
+    wishes: Signal<im_rc::Vector<(DisplaySkill, u8)>>,
+    talismans: ReadOnlySignal<im_rc::Vector<Talisman>>,
+    saved_builds: Signal<im_rc::Vector<(String, Build)>>,
+    storage: ReadOnlySignal<Storage>,
+) -> Element {
     let all_skills: im_rc::HashSet<DisplaySkill> =
         Skill::ALL.iter().copied().map(DisplaySkill).collect();
     let available_skills: im_rc::HashSet<DisplaySkill> =
-        all_skills.difference(wishes.iter().map(|(skill, _)| *skill).collect());
-    let builds = use_state(&cx, Vec::<Build>::new);
-    let gender = use_state(&cx, Gender::default);
-    let weapon_slots = use_state(&cx, || [0u8; 3]);
+        all_skills.difference(wishes.read().iter().map(|(skill, _)| *skill).collect());
+    let mut builds = use_signal(Vec::<Build>::new);
+    let mut gender = use_signal(Gender::default);
+    let weapon_slots = use_signal(|| [0u8; 3]);
 
-    let rows = wishes.iter().enumerate().map(|(index, (skill, amount))| {
+    let wishes_r = wishes.read();
+
+    let rows = wishes_r.iter().enumerate().map(|(index, (skill, amount))| {
         rsx! {
             div { class: "field has-addons",
                 SkillRow {
@@ -37,31 +38,32 @@ pub(crate) fn Home<'a>(
                     index: index,
                     skill: *skill,
                     amount: *amount,
-                    locale: *locale
+                    locale: locale
                 }
             }
         }
     });
 
     let toggle_gender = move |_| {
-        gender.set(if gender == &Gender::Female {
+        gender.set(if *gender.read() == Gender::Female {
             Gender::Male
         } else {
             Gender::Female
         })
     };
 
-    let icon_button = if gender == &Gender::Female {
+    let icon_button = if *gender.read() == Gender::Female {
         "fa-solid fa-venus"
     } else {
         "fa-solid fa-mars"
     };
 
-    let search_is_disabled = wishes.is_empty();
+    let search_is_disabled = wishes.read().is_empty();
 
     let search_builds = move |_| {
         builds.set(pre_selection_then_brute_force_search(
             wishes
+                .read()
                 .iter()
                 .map(|(skill, amount)| (skill.0, *amount))
                 .collect::<Vec<(Skill, u8)>>()
@@ -71,46 +73,54 @@ pub(crate) fn Home<'a>(
                 chests: &CHESTS.iter().map(Into::into).collect::<Vec<Armor>>(),
                 helmets: &HELMETS.iter().map(Into::into).collect::<Vec<Armor>>(),
                 legs: &LEGS.iter().map(Into::into).collect::<Vec<Armor>>(),
-                talismans: &talismans.iter().map(Into::into).collect::<Vec<Armor>>(),
+                talismans: &talismans
+                    .read()
+                    .iter()
+                    .map(Into::into)
+                    .collect::<Vec<Armor>>(),
                 waists: &WAISTS.iter().map(Into::into).collect::<Vec<Armor>>(),
             },
-            **gender,
-            **weapon_slots,
+            *gender.read(),
+            *weapon_slots.read(),
         ));
     };
 
-    let build_views = builds.iter().map(|build| {
+    let builds_r = builds.read();
+
+    let build_views = builds_r.iter().map(|build| {
         rsx! {BuildView {
-            b: build,
-            locale: *locale,
+            b: build.clone(),
+            locale: locale,
             saved_builds: saved_builds,
             storage: storage
         }}
     });
 
-    let weapon_slot_buttons = weapon_slots.iter().enumerate().map(|(index, value)| {
+    let weapon_slots_r = weapon_slots.read();
+
+    let weapon_slot_buttons = weapon_slots_r.iter().enumerate().map(|(index, value)| {
         rsx!(SlotButton {
-            slots: weapon_slots
-            value: *value
+            slots: weapon_slots,
+            value: *value,
             index: index
         })
     });
 
-    cx.render(rsx!(
+    rsx!(
         div { class: "columns",
             div { class: "column",
                 div { class: "field is-grouped",
                     AddSkill {
                         options: available_skills,
                         skills: wishes,
-                        locale: *locale
+                        locale: locale
                     }
                     div { class: "control",
                         button { class: "button is-info", disabled: "{search_is_disabled}", onclick: search_builds,
                             span { class: "icon is-small",
                                 i { class: "fa-solid fa-magnifying-glass" }
                             }
-                            span { [UiSymbole::SearchBuilds.translate(*locale)] }
+                            span { {UiSymbole::SearchBuilds.translate(locale)} }
                         }
                     }
                 }
@@ -130,46 +140,43 @@ pub(crate) fn Home<'a>(
                                 }
                             }
                         }
-                        weapon_slot_buttons
+                        {weapon_slot_buttons}
                     }
                 }
-                rows
+                {rows}
             }
             div { class: "column",
-                build_views
+                {build_views}
             }
         }
-    ))
+    )
 }
 
-#[inline_props] // can't use build as parameter name
-fn BuildView<'a>(
-    cx: Scope,
-    b: &'a Build,
+#[component] // can't use build as parameter name
+fn BuildView(
+    b: ReadOnlySignal<Build>,
     locale: Locale,
-    saved_builds: &'a UseState<im_rc::Vector<(String, Build)>>,
-    storage: &'a Storage,
-) -> Element<'a> {
-    let build_name = use_state(&cx, String::new);
-    let locale = *locale;
-    let b = *b;
+    saved_builds: Signal<im_rc::Vector<(String, Build)>>,
+    storage: ReadOnlySignal<Storage>,
+) -> Element {
+    let mut build_name = use_signal(String::new);
 
-    let mut all_skills: Vec<(Skill, u8)> = b.get_all_skills_and_amounts().drain().collect();
+    let mut all_skills: Vec<(Skill, u8)> = b.read().get_all_skills_and_amounts().drain().collect();
     all_skills.sort_unstable_by_key(|(_, amount)| *amount);
 
     let placeholder = UiSymbole::BuildsName.translate(locale);
 
-    let save_build = |_| {
+    let save_build = move |_| {
         saved_builds.with_mut(|builds| {
-            builds.push_back((build_name.to_string(), b.clone()));
-            storage.builds().save(builds);
+            builds.push_back((build_name.to_string(), b.read().clone()));
+            storage.read().builds().save(builds);
         });
         build_name.set(String::new());
     };
 
-    let save_disabled = build_name.is_empty();
+    let save_disabled = build_name.read().is_empty();
 
-    cx.render(rsx!(article { class: "panel is-info",
+    rsx!(article { class: "panel is-info",
         p { class: "panel-heading" }
         div { class: "panel-block",
             div { class: "field has-addons is-expanded is-flex-grow-1",
@@ -178,7 +185,7 @@ fn BuildView<'a>(
                         class: "input",
                         r#type: "text",
                         placeholder: "{placeholder}",
-                        oninput: |event| build_name.set(event.value.clone())
+                        oninput: move |event| build_name.set(event.value().clone())
                     }
                 }
                 div { class: "control",
@@ -189,11 +196,11 @@ fn BuildView<'a>(
                         span { class: "icon is-small",
                             i { class: "fa-solid fa-star" }
                         }
-                        span { [UiSymbole::Save.translate(locale)] }
+                        span { {UiSymbole::Save.translate(locale)} }
                     }
                 }
             }
         }
         BuildDetails { b: b, locale: locale }
-    }))
+    })
 }

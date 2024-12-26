@@ -7,45 +7,43 @@ use crate::{
     DisplaySkill,
 };
 
-#[inline_props]
-pub(crate) fn AddSkill<'a>(
-    cx: Scope,
+#[component]
+pub(crate) fn AddSkill(
     options: im_rc::HashSet<DisplaySkill>,
-    skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+    skills: Signal<im_rc::Vector<(DisplaySkill, u8)>>,
     locale: Locale,
-) -> Element<'a> {
-    let is_active = use_state(&cx, || false);
+) -> Element {
+    let mut is_active = use_signal(|| false);
 
-    cx.render(rsx! {
+    rsx! {
         div { class: "control",
-            button { class: "button is-primary", onclick: |_| is_active.set(true),
+            button { class: "button is-primary", onclick: move |_| is_active.set(true),
                 span { class: "icon is-small",
                     i { class: "fa-solid fa-pepper-hot" }
                 },
-                span { [UiSymbole::AddSkill.translate(*locale)] }
+                span { {UiSymbole::AddSkill.translate(locale)} }
             }
         }
         SelectWish {
             options: options,
             wishes: skills,
             is_active: is_active,
-            locale: *locale
+            locale: locale
         },
-    })
+    }
 }
 
-#[inline_props]
-fn SelectWish<'a>(
-    cx: Scope,
-    options: &'a im_rc::HashSet<DisplaySkill>,
-    wishes: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
-    is_active: &'a UseState<bool>,
+#[component]
+fn SelectWish(
+    options: im_rc::HashSet<DisplaySkill>,
+    wishes: Signal<im_rc::Vector<(DisplaySkill, u8)>>,
+    is_active: Signal<bool>,
     locale: Locale,
-) -> Element<'a> {
+) -> Element {
     // always lowercase
-    let filter = use_state(&cx, String::new);
+    let mut filter = use_signal(String::new);
 
-    let class = if ***is_active {
+    let class = if *is_active.read() {
         "modal is-active"
     } else {
         "modal"
@@ -53,14 +51,12 @@ fn SelectWish<'a>(
 
     let on_select = |skill| {
         move |_| {
-            wishes.make_mut().push_back((skill, 1));
+            wishes.write().push_back((skill, 1));
             is_active.set(false)
         }
     };
 
-    let filter_without_diacritics = remove_diacritics(filter);
-
-    let locale = *locale;
+    let filter_without_diacritics = remove_diacritics(&filter.read());
 
     let mut options: Vec<DisplaySkill> = options
         .iter()
@@ -79,35 +75,39 @@ fn SelectWish<'a>(
 
     let options = options.iter().map(|&skill| {
         let text = match locale {
-            Locale::English => cx.render(rsx! { [skill.to_english()] }),
+            Locale::English => rsx! { {skill.to_english()} },
             _ => {
-                if !filter.is_empty() && skill.to_english().to_lowercase().contains(filter.as_str())
+                if !filter.read().is_empty()
+                    && skill
+                        .to_english()
+                        .to_lowercase()
+                        .contains(filter.read().as_str())
                 {
-                    cx.render(rsx! {
-                        [skill.translate(locale)]
+                    rsx! {
+                        {skill.translate(locale)}
                         span { class: "is-italic has-text-grey-light ml-1",
-                            [skill.to_english()]
+                            {skill.to_english()}
                         }
-                    })
+                    }
                 } else {
-                    cx.render(rsx! {
-                        [skill.translate(locale)]
-                    })
+                    rsx! {
+                        {skill.translate(locale)}
+                    }
                 }
             }
         };
         rsx! {
             a { class: "panel-block", onclick: on_select(skill),
-                text
+                {text}
             }
         }
     });
 
     let placeholder = UiSymbole::Filter.translate(locale);
 
-    cx.render(rsx! {
+    rsx! {
         div { class: "{class}",
-            div { class: "modal-background", onclick: |_| is_active.set(false) }
+            div { class: "modal-background", onclick: move |_| is_active.set(false) }
             div { class: "modal-card",
                 header { class: "modal-card-head",
                     div { class: "modal-card-title mr-5",
@@ -116,19 +116,19 @@ fn SelectWish<'a>(
                                 class: "input is-fullwidth",
                                 r#type: "text",
                                 placeholder: "{placeholder}",
-                                oninput: |event| filter.set(event.value.to_lowercase())
+                                oninput: move |event| filter.set(event.value().to_lowercase())
                             }
                             span { class: "icon is-left",
                                 i { class: "fas fa-search" }
                             }
                         }
                     },
-                    button { class: "delete", onclick: |_| is_active.set(false) }
+                    button { class: "delete", onclick: move |_| is_active.set(false) }
                 }
                 div { class: "modal-card-body",
-                    options
+                    {options}
                 }
             }
         }
-    })
+    }
 }

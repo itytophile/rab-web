@@ -11,7 +11,7 @@ edition = "2021"
 
 [dependencies]
 rab-core = "0.4"
-dioxus = { version = "0.2", features = ["web"] }
+dioxus = { version = "0.6", features = ["web"] }
 im-rc = { version = "15", features = ["serde"] }
 strum = "0.26"
 strum_macros = "0.26"

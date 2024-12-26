@@ -64,27 +64,25 @@ enum Route {
     Builds,
 }
 
-fn app(cx: Scope) -> Element {
-    let storage = use_state(&cx, || {
-        web_sys::window().unwrap().local_storage().unwrap().unwrap()
-    });
-    let locale = use_state(&cx, || storage.locale().get().unwrap_or(Locale::English));
-    let route = use_state(&cx, || Route::Home);
-    let skills = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
-    let wishes = use_state(&cx, im_rc::Vector::<(DisplaySkill, u8)>::new);
-    let talismans = use_state(&cx, || storage.talismans().get().unwrap_or_default());
-    let saved_builds = use_state(&cx, || storage.builds().get().unwrap_or_default());
+fn app() -> Element {
+    let storage = use_signal(|| web_sys::window().unwrap().local_storage().unwrap().unwrap());
+    let locale = use_signal(|| storage.read().locale().get().unwrap_or(Locale::English));
+    let route = use_signal(|| Route::Home);
+    let skills = use_signal(im_rc::Vector::<(DisplaySkill, u8)>::new);
+    let wishes = use_signal(im_rc::Vector::<(DisplaySkill, u8)>::new);
+    let talismans = use_signal(|| storage.read().talismans().get().unwrap_or_default());
+    let saved_builds = use_signal(|| storage.read().builds().get().unwrap_or_default());
 
-    let routes = match **route {
+    let routes = match *route.read() {
         Route::Home => rsx!(Home {
-            locale: **locale,
+            locale: *locale.read(),
             wishes: wishes,
             talismans: talismans,
             saved_builds: saved_builds,
             storage: storage
         }),
         Route::Talismans => rsx!(Talismans {
-            locale: **locale,
+            locale: *locale.read(),
             skills: skills,
             talismans: talismans,
             storage: storage
@@ -92,12 +90,12 @@ fn app(cx: Scope) -> Element {
         Route::Builds => rsx!(Builds {
             saved_builds: saved_builds,
             storage: storage,
-            locale: **locale,
+            locale: *locale.read(),
             route: route
         }),
     };
 
-    cx.render(rsx!(
+    rsx!(
     Navbar {
         locale: locale,
         route: route,
@@ -105,37 +103,36 @@ fn app(cx: Scope) -> Element {
     }
     section { class: "section",
         div { class: "container",
-            routes
+            {routes}
         }
-    }))
+    })
 }
 
-#[inline_props]
-fn Navbar<'a>(
-    cx: Scope,
-    locale: &'a UseState<Locale>,
-    route: &'a UseState<Route>,
-    storage: &'a Storage,
-) -> Element<'a> {
-    let is_dropdown_active = use_state(&cx, || false);
-    let is_active = use_state(&cx, || false);
+#[component]
+fn Navbar(
+    locale: Signal<Locale>,
+    route: Signal<Route>,
+    storage: ReadOnlySignal<Storage>,
+) -> Element {
+    let mut is_dropdown_active = use_signal(|| false);
+    let mut is_active = use_signal(|| false);
 
-    let class_dropdown = if **is_dropdown_active {
+    let class_dropdown = if *is_dropdown_active.read() {
         "dropdown is-active"
     } else {
         "dropdown"
     };
 
     let locales = Locale::iter().map(|loc| {
-        cx.render(rsx!(a {
+        rsx!(a {
             class:"dropdown-item",
             onclick: move |_| {
                 locale.set(loc);
                 is_dropdown_active.set(false);
-                storage.locale().save(&loc)
+                storage.read().locale().save(&loc)
             },
-            [loc.native()]
-        }))
+            {loc.native()}
+        })
     });
 
     let spans = (0..3).map(|_| {
@@ -144,7 +141,7 @@ fn Navbar<'a>(
         })
     });
 
-    let (burger_class, menu_class) = if **is_active {
+    let (burger_class, menu_class) = if *is_active.read() {
         ("navbar-burger is-active", "navbar-menu is-active")
     } else {
         ("navbar-burger", "navbar-menu")
@@ -159,8 +156,9 @@ fn Navbar<'a>(
         ),
         (Route::Builds, "fa-solid fa-star", UiSymbole::MyBuilds),
     ]
+    .into_iter()
     .map(|(to_route, icon, label)| {
-        let class = if to_route == ***route {
+        let class = if to_route == *route.read() {
             "button is-static"
         } else {
             "button"
@@ -171,49 +169,47 @@ fn Navbar<'a>(
             span { class: "icon is-small",
                 i { class: "{icon}" }
             }
-            span { [label.translate(***locale)] }
+            span { {label.translate(*locale.read())} }
         })
     });
 
-    cx.render(
-        rsx!(nav { class: "navbar", role: "navigation", aria_label: "main navigation",
-            div { class: "navbar-brand",
+    rsx!(nav { class: "navbar", role: "navigation", aria_label: "main navigation",
+        div { class: "navbar-brand",
+            div { class: "navbar-item",
+                div { class: "{class_dropdown}",
+                    div { class: "dropdown-trigger",
+                        a { class: "button", onclick: move |_| *is_dropdown_active.write() ^= true,
+                            span { class: "icon is-small",
+                                i { class: "fa-solid fa-globe" }
+                            }
+                        }
+                    }
+                    div { class: "dropdown-menu",
+                        div { class: "dropdown-content",
+                            {locales}
+                        }
+                    }
+                }
+            }
+            a {
+                role: "button",
+                class: "{burger_class}",
+                onclick: move |_| *is_active.write() ^= true,
+                {spans}
+            }
+        }
+        div { class: "{menu_class}",
+            div { class: "navbar-end",
                 div { class: "navbar-item",
-                    div { class: "{class_dropdown}",
-                        div { class: "dropdown-trigger",
-                            a { class: "button", onclick: |_| *is_dropdown_active.make_mut() ^= true,
-                                span { class: "icon is-small",
-                                    i { class: "fa-solid fa-globe" }
-                                }
-                            }
-                        }
-                        div { class: "dropdown-menu",
-                            div { class: "dropdown-content",
-                                locales
-                            }
-                        }
-                    }
-                }
-                a {
-                    role: "button",
-                    class: "{burger_class}",
-                    onclick: |_| *is_active.make_mut() ^= true,
-                    spans
-                }
-            }
-            div { class: "{menu_class}",
-                div { class: "navbar-end",
-                    div { class: "navbar-item",
-                        div { class:"buttons",
-                            links
-                        }
+                    div { class:"buttons",
+                        {links}
                     }
                 }
             }
-        }),
-    )
+        }
+    })
 }
 
 fn main() {
-    dioxus::web::launch(app);
+    dioxus::launch(app);
 }

@@ -5,31 +5,28 @@ use crate::{
     DisplaySkill,
 };
 
-#[inline_props]
-pub(crate) fn SkillRow<'a>(
-    cx: Scope,
-    skills: &'a UseState<im_rc::Vector<(DisplaySkill, u8)>>,
+#[component]
+pub(crate) fn SkillRow(
+    skills: Signal<im_rc::Vector<(DisplaySkill, u8)>>,
     index: usize,
     skill: DisplaySkill,
     amount: u8,
     locale: Locale,
-) -> Element<'a> {
-    let (index, skill, amount) = (*index, *skill, *amount);
-
+) -> Element {
     let is_minus_disabled = amount == 1;
     let is_plus_disabled = amount == skill.get_limit();
 
     let remove_skill = move |_| {
-        skills.make_mut().remove(index);
+        skills.write().remove(index);
     };
 
-    let increment = move |_| skills.make_mut()[index] = (skill, amount + 1);
+    let increment = move |_| skills.write()[index] = (skill, amount + 1);
 
-    let decrement = move |_| skills.make_mut()[index] = (skill, amount - 1);
+    let decrement = move |_| skills.write()[index] = (skill, amount - 1);
 
-    let skill = skill.translate(*locale);
+    let skill = skill.translate(locale);
 
-    cx.render(rsx! {
+    rsx! {
         div { class: "control",
             button { class: "button is-danger", onclick: remove_skill,
                 span { class: "icon is-small",
@@ -57,5 +54,5 @@ pub(crate) fn SkillRow<'a>(
                 }
             }
         }
-    })
+    }
 }
